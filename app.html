@@ -1,0 +1,2727 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Supa Lean — App</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;500;600;700;800&family=Plus+Jakarta+Sans:ital,wght@0,300;0,400;0,500;0,600;1,300&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<style>
+:root {
+  --bg: #08080f;
+  --bg2: #0f0f18;
+  --bg3: #161622;
+  --card: #111119;
+  --border: #222230;
+  --lime: #c8f000;
+  --orange: #ff5a1f;
+  --teal: #00e5b0;
+  --blue: #3d8bff;
+  --text: #ededf5;
+  --muted: #5c5c78;
+  --danger: #ff4455;
+  --warning: #ffaa00;
+  --success: #00d68f;
+}
+
+* { margin: 0; padding: 0; box-sizing: border-box; }
+html, body { height: 100%; }
+
+body {
+  font-family: 'Plus Jakarta Sans', sans-serif;
+  background: var(--bg);
+  color: var(--text);
+  font-size: 15px;
+  line-height: 1.6;
+}
+
+/* ===== AUTH SCREENS ===== */
+#auth-screen, #onboarding-screen {
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+  background: var(--bg);
+}
+
+#auth-screen::before {
+  content: '';
+  position: fixed;
+  top: -200px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 600px;
+  height: 400px;
+  background: radial-gradient(ellipse, rgba(200,240,0,0.06) 0%, transparent 70%);
+  pointer-events: none;
+}
+
+.auth-box {
+  width: 100%;
+  max-width: 420px;
+}
+
+.auth-logo {
+  font-family: 'Syne', sans-serif;
+  font-size: 32px;
+  font-weight: 800;
+  color: var(--lime);
+  letter-spacing: -1px;
+  margin-bottom: 8px;
+}
+
+.auth-tagline {
+  font-size: 15px;
+  color: var(--muted);
+  margin-bottom: 40px;
+  font-weight: 300;
+}
+
+.auth-card {
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: 20px;
+  padding: 32px;
+}
+
+.auth-tabs {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  background: var(--bg3);
+  border-radius: 10px;
+  padding: 4px;
+  margin-bottom: 28px;
+}
+
+.auth-tab {
+  padding: 10px;
+  text-align: center;
+  border-radius: 8px;
+  cursor: pointer;
+  font-family: 'Syne', sans-serif;
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--muted);
+  transition: all 0.2s;
+}
+
+.auth-tab.active {
+  background: var(--lime);
+  color: #000;
+}
+
+.form-group {
+  margin-bottom: 16px;
+}
+
+.form-label {
+  display: block;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--muted);
+  letter-spacing: 0.5px;
+  text-transform: uppercase;
+  margin-bottom: 8px;
+}
+
+.form-input {
+  width: 100%;
+  background: var(--bg3);
+  border: 1.5px solid var(--border);
+  border-radius: 10px;
+  color: var(--text);
+  font-family: 'Plus Jakarta Sans', sans-serif;
+  font-size: 15px;
+  padding: 13px 16px;
+  outline: none;
+  transition: border-color 0.2s;
+}
+
+.form-input:focus { border-color: var(--lime); }
+.form-input::placeholder { color: var(--muted); }
+
+.btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 14px 20px;
+  border-radius: 10px;
+  border: none;
+  font-family: 'Syne', sans-serif;
+  font-size: 15px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.2s;
+  width: 100%;
+  letter-spacing: 0.3px;
+}
+
+.btn-lime { background: var(--lime); color: #000; }
+.btn-lime:hover { opacity: 0.9; transform: translateY(-1px); }
+.btn-outline { background: transparent; border: 1.5px solid var(--border); color: var(--text); }
+.btn-outline:hover { border-color: var(--lime); color: var(--lime); }
+.btn-danger-outline { background: transparent; border: 1.5px solid var(--danger); color: var(--danger); }
+.btn-sm { padding: 10px 16px; font-size: 13px; border-radius: 8px; }
+.btn-xs { padding: 7px 12px; font-size: 12px; border-radius: 6px; }
+
+.error-msg {
+  color: var(--danger);
+  font-size: 13px;
+  margin-top: 8px;
+  display: none;
+}
+
+/* ===== ONBOARDING ===== */
+.onboard-box {
+  width: 100%;
+  max-width: 580px;
+}
+
+.onboard-step {
+  display: none;
+}
+
+.onboard-step.active {
+  display: block;
+  animation: fadeSlide 0.4s ease;
+}
+
+@keyframes fadeSlide {
+  from { opacity: 0; transform: translateX(20px); }
+  to { opacity: 1; transform: translateX(0); }
+}
+
+.onboard-header {
+  margin-bottom: 32px;
+}
+
+.onboard-step-indicator {
+  font-size: 12px;
+  color: var(--muted);
+  font-weight: 600;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  margin-bottom: 12px;
+}
+
+.onboard-title {
+  font-family: 'Syne', sans-serif;
+  font-size: 28px;
+  font-weight: 800;
+  line-height: 1.2;
+  margin-bottom: 10px;
+  letter-spacing: -0.5px;
+}
+
+.onboard-title span { color: var(--lime); }
+
+.onboard-sub {
+  font-size: 15px;
+  color: var(--muted);
+  line-height: 1.6;
+  font-weight: 300;
+}
+
+.onboard-card {
+  background: var(--card);
+  border: 1.5px solid var(--border);
+  border-radius: 20px;
+  padding: 28px;
+  margin-bottom: 16px;
+}
+
+.choice-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+}
+
+.choice-btn {
+  padding: 24px 20px;
+  background: var(--bg3);
+  border: 1.5px solid var(--border);
+  border-radius: 14px;
+  cursor: pointer;
+  text-align: center;
+  transition: all 0.2s;
+  color: var(--text);
+}
+
+.choice-btn:hover {
+  border-color: var(--lime);
+  background: rgba(200,240,0,0.04);
+}
+
+.choice-icon { font-size: 36px; margin-bottom: 12px; }
+
+.choice-title {
+  font-family: 'Syne', sans-serif;
+  font-size: 15px;
+  font-weight: 700;
+  margin-bottom: 6px;
+}
+
+.choice-desc {
+  font-size: 13px;
+  color: var(--muted);
+  line-height: 1.5;
+}
+
+.upload-zone {
+  border: 2px dashed var(--border);
+  border-radius: 14px;
+  padding: 40px 24px;
+  text-align: center;
+  cursor: pointer;
+  transition: all 0.2s;
+  margin-bottom: 16px;
+}
+
+.upload-zone:hover {
+  border-color: var(--lime);
+  background: rgba(200,240,0,0.02);
+}
+
+.upload-icon { font-size: 40px; margin-bottom: 12px; }
+.upload-title { font-family: 'Syne', sans-serif; font-size: 16px; font-weight: 700; margin-bottom: 6px; }
+.upload-sub { font-size: 13px; color: var(--muted); }
+
+.ai-analysis-box {
+  background: var(--bg3);
+  border: 1.5px solid rgba(200,240,0,0.3);
+  border-radius: 12px;
+  padding: 20px;
+  margin-top: 16px;
+  display: none;
+}
+
+.ai-analysis-label {
+  font-size: 11px;
+  color: var(--lime);
+  font-family: 'Syne', sans-serif;
+  font-weight: 700;
+  letter-spacing: 1.5px;
+  text-transform: uppercase;
+  margin-bottom: 10px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.ai-analysis-text {
+  font-size: 14px;
+  line-height: 1.7;
+  color: var(--muted);
+}
+
+.mandatory-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 11px;
+  background: rgba(200,240,0,0.12);
+  color: var(--lime);
+  padding: 3px 8px;
+  border-radius: 4px;
+  font-weight: 600;
+  margin-left: 8px;
+  vertical-align: middle;
+}
+
+.optional-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 11px;
+  background: rgba(255,255,255,0.05);
+  color: var(--muted);
+  padding: 3px 8px;
+  border-radius: 4px;
+  font-weight: 500;
+  margin-left: 8px;
+  vertical-align: middle;
+}
+
+.ai-suggest-box {
+  background: rgba(200,240,0,0.04);
+  border: 1px solid rgba(200,240,0,0.15);
+  border-radius: 10px;
+  padding: 14px 16px;
+  font-size: 13px;
+  color: var(--muted);
+  margin-top: 8px;
+  line-height: 1.6;
+}
+
+/* ===== MAIN APP ===== */
+#app-screen {
+  display: none;
+  height: 100vh;
+  overflow: hidden;
+  flex-direction: column;
+}
+
+.app-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 16px 24px;
+  border-bottom: 1px solid var(--border);
+  background: var(--bg);
+  flex-shrink: 0;
+  z-index: 50;
+}
+
+.app-logo {
+  font-family: 'Syne', sans-serif;
+  font-size: 20px;
+  font-weight: 800;
+  color: var(--lime);
+  letter-spacing: -0.5px;
+}
+
+.header-right {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.user-badge {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 7px 14px;
+  background: var(--bg3);
+  border: 1px solid var(--border);
+  border-radius: 20px;
+  font-size: 13px;
+  color: var(--muted);
+}
+
+.user-dot {
+  width: 7px;
+  height: 7px;
+  background: var(--success);
+  border-radius: 50%;
+}
+
+.btn-logout {
+  background: transparent;
+  border: 1px solid var(--border);
+  color: var(--muted);
+  padding: 7px 14px;
+  border-radius: 8px;
+  cursor: pointer;
+  font-size: 13px;
+  font-family: 'Syne', sans-serif;
+  font-weight: 600;
+  transition: all 0.2s;
+}
+
+.btn-logout:hover { border-color: var(--danger); color: var(--danger); }
+
+.app-body {
+  display: flex;
+  flex: 1;
+  overflow: hidden;
+}
+
+/* ===== SIDEBAR NAV ===== */
+.sidebar {
+  width: 220px;
+  background: var(--bg2);
+  border-right: 1px solid var(--border);
+  padding: 20px 12px;
+  display: flex;
+  flex-direction: column;
+  flex-shrink: 0;
+  overflow-y: auto;
+}
+
+.sidebar-section-label {
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  color: var(--muted);
+  padding: 0 12px;
+  margin: 20px 0 8px;
+}
+
+.sidebar-section-label:first-of-type { margin-top: 4px; }
+
+.nav-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 11px 12px;
+  border-radius: 10px;
+  cursor: pointer;
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--muted);
+  transition: all 0.15s;
+  margin-bottom: 2px;
+  border: 1px solid transparent;
+}
+
+.nav-item:hover { background: var(--bg3); color: var(--text); }
+
+.nav-item.active {
+  background: rgba(200,240,0,0.1);
+  color: var(--lime);
+  border-color: rgba(200,240,0,0.2);
+  font-weight: 600;
+}
+
+.nav-icon { font-size: 17px; width: 22px; text-align: center; }
+
+.sidebar-footer {
+  margin-top: auto;
+  padding-top: 16px;
+  border-top: 1px solid var(--border);
+}
+
+/* ===== MAIN CONTENT ===== */
+.main-content {
+  flex: 1;
+  overflow-y: auto;
+  background: var(--bg);
+}
+
+.content-pane {
+  display: none;
+  padding: 28px;
+  max-width: 880px;
+  animation: fadeIn 0.3s ease;
+}
+
+.content-pane.active { display: block; }
+
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+.pane-title {
+  font-family: 'Syne', sans-serif;
+  font-size: 22px;
+  font-weight: 800;
+  letter-spacing: -0.5px;
+  margin-bottom: 20px;
+}
+
+/* ===== CHATBOT PANEL ===== */
+.chat-panel {
+  width: 340px;
+  background: var(--bg2);
+  border-left: 1px solid var(--border);
+  display: flex;
+  flex-direction: column;
+  flex-shrink: 0;
+}
+
+.chat-header {
+  padding: 16px 20px;
+  border-bottom: 1px solid var(--border);
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-shrink: 0;
+}
+
+.chat-avatar {
+  width: 36px;
+  height: 36px;
+  background: linear-gradient(135deg, var(--lime), var(--teal));
+  border-radius: 10px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 18px;
+  flex-shrink: 0;
+}
+
+.chat-title {
+  font-family: 'Syne', sans-serif;
+  font-size: 15px;
+  font-weight: 700;
+}
+
+.chat-subtitle {
+  font-size: 12px;
+  color: var(--muted);
+}
+
+.chat-messages {
+  flex: 1;
+  overflow-y: auto;
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.chat-msg {
+  max-width: 88%;
+  animation: msgIn 0.3s ease;
+}
+
+@keyframes msgIn {
+  from { opacity: 0; transform: translateY(8px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.chat-msg.user { align-self: flex-end; }
+.chat-msg.assistant { align-self: flex-start; }
+
+.msg-bubble {
+  padding: 10px 14px;
+  border-radius: 14px;
+  font-size: 13.5px;
+  line-height: 1.6;
+}
+
+.chat-msg.user .msg-bubble {
+  background: var(--lime);
+  color: #000;
+  border-bottom-right-radius: 4px;
+  font-weight: 500;
+}
+
+.chat-msg.assistant .msg-bubble {
+  background: var(--bg3);
+  border: 1px solid var(--border);
+  color: var(--text);
+  border-bottom-left-radius: 4px;
+}
+
+.msg-time {
+  font-size: 11px;
+  color: var(--muted);
+  margin-top: 4px;
+  padding: 0 4px;
+}
+
+.chat-input-area {
+  padding: 12px 16px;
+  border-top: 1px solid var(--border);
+  flex-shrink: 0;
+}
+
+.chat-input-row {
+  display: flex;
+  gap: 8px;
+  align-items: flex-end;
+}
+
+.chat-input {
+  flex: 1;
+  background: var(--bg3);
+  border: 1.5px solid var(--border);
+  border-radius: 12px;
+  color: var(--text);
+  font-family: 'Plus Jakarta Sans', sans-serif;
+  font-size: 14px;
+  padding: 10px 14px;
+  outline: none;
+  resize: none;
+  max-height: 120px;
+  transition: border-color 0.2s;
+}
+
+.chat-input:focus { border-color: var(--lime); }
+.chat-input::placeholder { color: var(--muted); }
+
+.chat-send {
+  width: 40px;
+  height: 40px;
+  background: var(--lime);
+  border: none;
+  border-radius: 10px;
+  cursor: pointer;
+  font-size: 18px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  transition: all 0.2s;
+}
+
+.chat-send:hover { opacity: 0.9; transform: scale(1.05); }
+
+.chat-suggestions {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+  margin-bottom: 10px;
+}
+
+.suggest-chip {
+  padding: 5px 10px;
+  background: var(--bg3);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  font-size: 11.5px;
+  color: var(--muted);
+  cursor: pointer;
+  transition: all 0.15s;
+  white-space: nowrap;
+}
+
+.suggest-chip:hover {
+  border-color: var(--lime);
+  color: var(--lime);
+}
+
+/* ===== DASHBOARD ===== */
+.target-bar {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 16px;
+  background: rgba(200,240,0,0.05);
+  border: 1px solid rgba(200,240,0,0.18);
+  border-radius: 12px;
+  margin-bottom: 20px;
+  font-size: 13px;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.target-item {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  color: var(--muted);
+}
+
+.target-val {
+  font-family: 'Syne', sans-serif;
+  font-weight: 700;
+  color: var(--lime);
+}
+
+.target-divider {
+  color: var(--border);
+}
+
+.stats-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 14px;
+  margin-bottom: 20px;
+}
+
+.stat-box {
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  padding: 18px 16px;
+  position: relative;
+  overflow: hidden;
+}
+
+.stat-box::before {
+  content: '';
+  position: absolute;
+  top: 0; left: 0; right: 0;
+  height: 2.5px;
+  background: var(--accent-clr, var(--lime));
+}
+
+.stat-num {
+  font-family: 'Syne', sans-serif;
+  font-size: 26px;
+  font-weight: 800;
+  color: var(--accent-clr, var(--lime));
+  line-height: 1.1;
+  margin-bottom: 4px;
+}
+
+.stat-label {
+  font-size: 12px;
+  color: var(--muted);
+  font-weight: 500;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.stat-sub {
+  font-size: 11px;
+  color: var(--muted);
+  margin-top: 2px;
+}
+
+.prog-section {
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  padding: 20px;
+  margin-bottom: 16px;
+}
+
+.prog-section-title {
+  font-family: 'Syne', sans-serif;
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  color: var(--muted);
+  margin-bottom: 18px;
+}
+
+.prog-row {
+  margin-bottom: 16px;
+}
+
+.prog-row:last-child { margin-bottom: 0; }
+
+.prog-head {
+  display: flex;
+  justify-content: space-between;
+  margin-bottom: 8px;
+}
+
+.prog-name { font-size: 14px; font-weight: 500; }
+.prog-val { font-size: 13px; font-family: 'Syne', sans-serif; font-weight: 700; color: var(--muted); }
+
+.prog-track {
+  height: 7px;
+  background: var(--bg3);
+  border-radius: 10px;
+  overflow: hidden;
+}
+
+.prog-fill {
+  height: 100%;
+  border-radius: 10px;
+  background: var(--fill, var(--lime));
+  transition: width 0.6s cubic-bezier(0.4,0,0.2,1);
+}
+
+/* ===== MEALS ===== */
+.meal-photo-area {
+  border: 2px dashed var(--border);
+  border-radius: 14px;
+  padding: 32px 20px;
+  text-align: center;
+  cursor: pointer;
+  transition: all 0.2s;
+  margin-bottom: 16px;
+}
+
+.meal-photo-area:hover {
+  border-color: var(--lime);
+  background: rgba(200,240,0,0.02);
+}
+
+.preview-img {
+  width: 100%;
+  max-height: 200px;
+  object-fit: cover;
+  border-radius: 10px;
+  margin-bottom: 12px;
+  display: none;
+}
+
+.ai-box {
+  background: var(--bg3);
+  border: 1px solid var(--border);
+  border-left: 3px solid var(--lime);
+  border-radius: 12px;
+  padding: 16px 18px;
+  margin-top: 14px;
+  display: none;
+}
+
+.ai-box.show { display: block; animation: fadeIn 0.3s ease; }
+
+.ai-box-label {
+  font-size: 11px;
+  color: var(--lime);
+  font-family: 'Syne', sans-serif;
+  font-weight: 700;
+  letter-spacing: 1.5px;
+  text-transform: uppercase;
+  margin-bottom: 8px;
+}
+
+.ai-box-text { font-size: 14px; line-height: 1.7; }
+
+.macro-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 10px;
+  margin-top: 14px;
+}
+
+.macro-input-wrap label {
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  color: var(--muted);
+  display: block;
+  margin-bottom: 6px;
+}
+
+.meal-list-item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 13px 16px;
+  background: var(--bg3);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  margin-bottom: 8px;
+  animation: slideIn 0.25s ease;
+}
+
+@keyframes slideIn {
+  from { opacity: 0; transform: translateX(-8px); }
+  to { opacity: 1; transform: translateX(0); }
+}
+
+.meal-info { flex: 1; min-width: 0; }
+.meal-name { font-size: 14px; font-weight: 500; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.meal-meta { font-size: 12px; color: var(--muted); margin-top: 2px; }
+
+.meal-badges { display: flex; gap: 6px; flex-shrink: 0; }
+
+.mbadge {
+  font-family: 'Syne', sans-serif;
+  font-size: 12px;
+  font-weight: 700;
+  padding: 4px 9px;
+  border-radius: 6px;
+}
+
+.mbadge-cal { background: rgba(200,240,0,0.12); color: var(--lime); }
+.mbadge-prot { background: rgba(0,229,176,0.12); color: var(--teal); }
+
+.type-tag {
+  font-size: 11px;
+  padding: 2px 8px;
+  border-radius: 4px;
+  background: var(--bg);
+  border: 1px solid var(--border);
+  color: var(--muted);
+  margin-right: 6px;
+}
+
+.del-btn {
+  background: none;
+  border: none;
+  color: var(--muted);
+  cursor: pointer;
+  font-size: 18px;
+  padding: 2px 6px;
+  transition: color 0.2s;
+  flex-shrink: 0;
+}
+
+.del-btn:hover { color: var(--danger); }
+
+/* ===== WORKOUT ===== */
+.session-type-row {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 12px;
+  margin-bottom: 20px;
+}
+
+.session-btn {
+  padding: 16px 12px;
+  background: var(--bg3);
+  border: 1.5px solid var(--border);
+  border-radius: 12px;
+  cursor: pointer;
+  text-align: center;
+  font-family: 'Syne', sans-serif;
+  font-size: 15px;
+  font-weight: 700;
+  color: var(--muted);
+  transition: all 0.2s;
+}
+
+.session-btn.selected {
+  background: rgba(200,240,0,0.1);
+  border-color: var(--lime);
+  color: var(--lime);
+}
+
+.exercise-row {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 10px;
+  align-items: flex-end;
+  margin-bottom: 12px;
+}
+
+.sets-container { margin-bottom: 12px; }
+
+.set-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr auto;
+  gap: 8px;
+  margin-bottom: 8px;
+  align-items: center;
+}
+
+.ex-item {
+  background: var(--bg3);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 14px 16px;
+  margin-bottom: 8px;
+  animation: slideIn 0.25s ease;
+}
+
+.ex-item-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 10px;
+}
+
+.ex-name {
+  font-family: 'Syne', sans-serif;
+  font-size: 15px;
+  font-weight: 700;
+}
+
+.set-chips { display: flex; gap: 6px; flex-wrap: wrap; }
+
+.set-chip {
+  font-size: 12px;
+  padding: 4px 10px;
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  font-family: 'Syne', sans-serif;
+  font-weight: 600;
+}
+
+.ref-box {
+  background: var(--bg3);
+  border: 1px solid var(--border);
+  border-left: 3px solid var(--orange);
+  border-radius: 12px;
+  padding: 16px 18px;
+  font-size: 13.5px;
+  line-height: 1.9;
+  color: var(--muted);
+}
+
+/* ===== CARDIO ===== */
+.cardio-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 14px 16px;
+  background: var(--bg3);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  margin-bottom: 8px;
+  animation: slideIn 0.25s ease;
+}
+
+.cardio-info h4 { font-size: 14px; font-weight: 600; margin-bottom: 3px; }
+.cardio-meta { font-size: 12px; color: var(--muted); }
+
+.cardio-right { display: flex; align-items: center; gap: 8px; }
+
+/* ===== RECOVERY ===== */
+.recovery-big {
+  display: flex;
+  align-items: center;
+  gap: 24px;
+  padding: 24px;
+  background: var(--bg3);
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  margin-bottom: 16px;
+}
+
+.rec-circle {
+  width: 88px;
+  height: 88px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-family: 'Syne', sans-serif;
+  font-size: 26px;
+  font-weight: 800;
+  flex-shrink: 0;
+  border: 3px solid var(--border);
+}
+
+.rec-text h3 {
+  font-family: 'Syne', sans-serif;
+  font-size: 20px;
+  font-weight: 800;
+  margin-bottom: 6px;
+}
+
+.rec-text p { font-size: 14px; color: var(--muted); line-height: 1.6; }
+
+/* ===== PROGRESS ===== */
+.weight-big-input {
+  font-family: 'Syne', sans-serif;
+  font-size: 40px;
+  font-weight: 800;
+  text-align: center;
+  background: var(--bg3);
+  border: 2px solid var(--border);
+  border-radius: 16px;
+  color: var(--text);
+  padding: 18px;
+  width: 100%;
+  outline: none;
+  transition: border-color 0.2s;
+}
+
+.weight-big-input:focus { border-color: var(--lime); }
+
+.comparison-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 14px;
+}
+
+.comparison-table th {
+  text-align: left;
+  padding: 10px 14px;
+  background: var(--bg3);
+  font-family: 'Syne', sans-serif;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+
+.comparison-table td {
+  padding: 13px 14px;
+  border-bottom: 1px solid var(--border);
+  color: var(--text);
+}
+
+.comparison-table tr:last-child td { border-bottom: none; }
+
+.up-bad { color: var(--danger); font-family: 'Syne', sans-serif; font-weight: 700; }
+.up-good { color: var(--success); font-family: 'Syne', sans-serif; font-weight: 700; }
+
+/* ===== SETTINGS ===== */
+.settings-section {
+  margin-bottom: 24px;
+}
+
+.settings-title {
+  font-family: 'Syne', sans-serif;
+  font-size: 14px;
+  font-weight: 700;
+  letter-spacing: 0.5px;
+  color: var(--muted);
+  text-transform: uppercase;
+  margin-bottom: 12px;
+}
+
+/* ===== SHARED COMPONENTS ===== */
+.section-card {
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  padding: 22px;
+  margin-bottom: 16px;
+}
+
+.section-card-title {
+  font-family: 'Syne', sans-serif;
+  font-size: 13px;
+  font-weight: 700;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  color: var(--muted);
+  margin-bottom: 18px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.section-card-title::before {
+  content: '';
+  width: 5px;
+  height: 5px;
+  border-radius: 50%;
+  background: var(--lime);
+  flex-shrink: 0;
+}
+
+.empty-state {
+  text-align: center;
+  padding: 32px 20px;
+  color: var(--muted);
+}
+
+.empty-icon { font-size: 36px; margin-bottom: 10px; }
+.empty-text { font-size: 14px; }
+
+.row-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+.row-3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 12px; }
+.mb-12 { margin-bottom: 12px; }
+.mb-16 { margin-bottom: 16px; }
+
+.tag-green { background: rgba(0,214,143,0.12); color: var(--success); border-radius: 6px; padding: 3px 10px; font-size: 12px; font-family: 'Syne', sans-serif; font-weight: 700; }
+.tag-yellow { background: rgba(255,170,0,0.12); color: var(--warning); border-radius: 6px; padding: 3px 10px; font-size: 12px; font-family: 'Syne', sans-serif; font-weight: 700; }
+.tag-red { background: rgba(255,68,85,0.12); color: var(--danger); border-radius: 6px; padding: 3px 10px; font-size: 12px; font-family: 'Syne', sans-serif; font-weight: 700; }
+
+.loading-dot {
+  display: inline-flex;
+  gap: 4px;
+  align-items: center;
+}
+
+.loading-dot span {
+  width: 5px;
+  height: 5px;
+  border-radius: 50%;
+  background: currentColor;
+  animation: ldot 0.9s infinite;
+}
+
+.loading-dot span:nth-child(2) { animation-delay: 0.15s; }
+.loading-dot span:nth-child(3) { animation-delay: 0.3s; }
+
+@keyframes ldot {
+  0%, 80%, 100% { transform: scale(0.6); opacity: 0.4; }
+  40% { transform: scale(1); opacity: 1; }
+}
+
+/* TOAST */
+.toast {
+  position: fixed;
+  bottom: 28px;
+  left: 50%;
+  transform: translateX(-50%) translateY(12px);
+  background: var(--lime);
+  color: #000;
+  padding: 12px 24px;
+  border-radius: 20px;
+  font-family: 'Syne', sans-serif;
+  font-size: 14px;
+  font-weight: 700;
+  z-index: 9999;
+  opacity: 0;
+  transition: all 0.3s;
+  pointer-events: none;
+  box-shadow: 0 8px 32px rgba(0,0,0,0.4);
+  white-space: nowrap;
+}
+
+.toast.show {
+  opacity: 1;
+  transform: translateX(-50%) translateY(0);
+}
+
+.toast.error { background: var(--danger); color: #fff; }
+
+/* SCROLLBAR */
+::-webkit-scrollbar { width: 4px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: var(--border); border-radius: 2px; }
+
+@media (max-width: 1024px) {
+  .chat-panel { display: none; }
+  .stats-grid { grid-template-columns: repeat(2, 1fr); }
+}
+
+@media (max-width: 640px) {
+  .sidebar { display: none; }
+}
+</style>
+</head>
+<body>
+
+<!-- AUTH SCREEN -->
+<div id="auth-screen">
+  <div class="auth-box">
+    <div class="auth-logo">SUPA LEAN</div>
+    <div class="auth-tagline">Psychology-first fitness tracking. Free. Open source.</div>
+
+    <div class="auth-card">
+      <div class="auth-tabs">
+        <div class="auth-tab active" id="tab-signin" onclick="switchAuthTab('signin')">Sign In</div>
+        <div class="auth-tab" id="tab-signup" onclick="switchAuthTab('signup')">Sign Up</div>
+      </div>
+
+      <div id="signin-form">
+        <div class="form-group">
+          <label class="form-label">Email</label>
+          <input type="email" class="form-input" id="signin-email" placeholder="you@example.com">
+        </div>
+        <div class="form-group">
+          <label class="form-label">Password</label>
+          <input type="password" class="form-input" id="signin-pass" placeholder="••••••••">
+        </div>
+        <p class="error-msg" id="signin-error"></p>
+        <button class="btn btn-lime" onclick="signIn()">Sign In →</button>
+      </div>
+
+      <div id="signup-form" style="display:none">
+        <div class="form-group">
+          <label class="form-label">Full Name</label>
+          <input type="text" class="form-input" id="signup-name" placeholder="Your name">
+        </div>
+        <div class="form-group">
+          <label class="form-label">Email</label>
+          <input type="email" class="form-input" id="signup-email" placeholder="you@example.com">
+        </div>
+        <div class="form-group">
+          <label class="form-label">Password</label>
+          <input type="password" class="form-input" id="signup-pass" placeholder="Min 8 characters">
+        </div>
+        <p class="error-msg" id="signup-error"></p>
+        <button class="btn btn-lime" onclick="signUp()">Create Account →</button>
+      </div>
+    </div>
+
+    <p style="text-align:center; margin-top:16px; font-size:13px; color:var(--muted)">
+      Add your OpenAI API key in Settings after signup.
+    </p>
+  </div>
+</div>
+
+<!-- ONBOARDING SCREEN -->
+<div id="onboarding-screen" style="display:none">
+  <div class="onboard-box">
+
+    <!-- Step 1: Scan or manual -->
+    <div class="onboard-step active" id="ob-step-1">
+      <div class="onboard-header">
+        <div class="onboard-step-indicator">Step 1 of 3 — Getting Started</div>
+        <h2 class="onboard-title">Do you have an <span>InBody</span><br>or BMI scan?</h2>
+        <p class="onboard-sub">If you have one, AI can read all your metrics automatically. Otherwise we'll set you up manually — takes 2 minutes.</p>
+      </div>
+      <div class="choice-grid">
+        <div class="choice-btn" onclick="chooseRoute('scan')">
+          <div class="choice-icon">📸</div>
+          <div class="choice-title">Yes, I have one</div>
+          <div class="choice-desc">Upload the photo and AI reads everything automatically</div>
+        </div>
+        <div class="choice-btn" onclick="chooseRoute('manual')">
+          <div class="choice-icon">✏️</div>
+          <div class="choice-title">No, I'll enter manually</div>
+          <div class="choice-desc">Enter your numbers directly — only weight required</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Step 2A: Upload scan -->
+    <div class="onboard-step" id="ob-step-2a">
+      <div class="onboard-header">
+        <div class="onboard-step-indicator">Step 2 of 3 — Scan Upload</div>
+        <h2 class="onboard-title">Upload your <span>InBody</span> scan</h2>
+        <p class="onboard-sub">Lay it flat, good lighting, all text readable. AI will extract visceral fat, muscle mass, body fat %, and build your protocol.</p>
+      </div>
+      <div class="onboard-card">
+        <div class="upload-zone" onclick="document.getElementById('inbody-photo').click()">
+          <div class="upload-icon">🫁</div>
+          <div class="upload-title">Tap to upload InBody scan</div>
+          <div class="upload-sub">JPG, PNG, HEIC — any readable photo</div>
+        </div>
+        <input type="file" id="inbody-photo" accept="image/*" style="display:none" onchange="analyzeInBody(event)">
+        <img id="inbody-preview" style="width:100%;max-height:220px;object-fit:cover;border-radius:10px;display:none;margin-bottom:14px">
+        <div class="ai-analysis-box" id="scan-analysis-box">
+          <div class="ai-analysis-label">
+            🤖 AI Reading Scan <div class="loading-dot" id="scan-loading"><span></span><span></span><span></span></div>
+          </div>
+          <div class="ai-analysis-text" id="scan-analysis-text"></div>
+        </div>
+        <button class="btn btn-lime" style="margin-top:16px" id="scan-next-btn" onclick="goToStep3()" disabled>Continue →</button>
+      </div>
+      <button class="btn btn-outline btn-sm" style="max-width:160px" onclick="goToStep('ob-step-1')">← Back</button>
+    </div>
+
+    <!-- Step 2B: Manual entry -->
+    <div class="onboard-step" id="ob-step-2b">
+      <div class="onboard-header">
+        <div class="onboard-step-indicator">Step 2 of 3 — Your Numbers</div>
+        <h2 class="onboard-title">Enter your <span>measurements</span></h2>
+        <p class="onboard-sub">Only the starred fields are required. AI will suggest everything else based on your weight and goals.</p>
+      </div>
+      <div class="onboard-card">
+        <div class="row-2 mb-16">
+          <div>
+            <label class="form-label">Current Weight (kg) <span class="mandatory-badge">★ Required</span></label>
+            <input type="number" class="form-input" id="manual-weight" placeholder="e.g. 90.3" step="0.1" oninput="suggestTargets()">
+          </div>
+          <div>
+            <label class="form-label">Ideal Weight (kg) <span class="mandatory-badge">★ Required</span></label>
+            <input type="number" class="form-input" id="manual-target" placeholder="e.g. 80" step="0.1">
+          </div>
+        </div>
+        <div class="row-2 mb-16">
+          <div>
+            <label class="form-label">Height (cm) <span class="optional-badge">Optional</span></label>
+            <input type="number" class="form-input" id="manual-height" placeholder="e.g. 170" oninput="suggestTargets()">
+          </div>
+          <div>
+            <label class="form-label">Age <span class="optional-badge">Optional</span></label>
+            <input type="number" class="form-input" id="manual-age" placeholder="e.g. 30">
+          </div>
+        </div>
+        <div class="row-2 mb-16">
+          <div>
+            <label class="form-label">Body Fat % <span class="optional-badge">Optional</span></label>
+            <input type="number" class="form-input" id="manual-bf" placeholder="e.g. 38.7" step="0.1">
+          </div>
+          <div>
+            <label class="form-label">Visceral Fat Level <span class="optional-badge">Optional</span></label>
+            <input type="number" class="form-input" id="manual-vf" placeholder="Normal: 1-9">
+          </div>
+        </div>
+        <div id="ai-targets-box" class="ai-suggest-box" style="display:none">
+          <strong style="color:var(--lime); font-family:'Syne',sans-serif">🤖 AI Suggested Targets:</strong>
+          <div id="ai-targets-text" style="margin-top:6px"></div>
+        </div>
+      </div>
+      <button class="btn btn-lime" onclick="saveManualProfile()">Continue →</button>
+      <button class="btn btn-outline btn-sm" style="max-width:160px; margin-top:10px" onclick="goToStep('ob-step-1')">← Back</button>
+    </div>
+
+    <!-- Step 3: API Key + Finish -->
+    <div class="onboard-step" id="ob-step-3">
+      <div class="onboard-header">
+        <div class="onboard-step-indicator">Step 3 of 3 — You're Set!</div>
+        <h2 class="onboard-title">Ready to <span>start</span></h2>
+        <p class="onboard-sub">AI meal analysis, InBody reading, and your personal coach are all ready. Everything is powered by our servers — no API keys needed from you.</p>
+      </div>
+      <div class="onboard-card">
+        <div style="text-align:center;padding:20px 0">
+          <div style="font-size:48px;margin-bottom:16px">🚀</div>
+          <div style="font-size:16px;color:var(--muted);line-height:1.7">
+            Your profile is set up.<br>AI coach is ready.<br>Let's get to work.
+          </div>
+        </div>
+        <button class="btn btn-lime" onclick="finishOnboarding()">Launch Supa Lean →</button>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<!-- MAIN APP -->
+<div id="app-screen">
+  <div class="app-header">
+    <div class="app-logo">SUPA LEAN</div>
+    <div class="header-right">
+      <div class="user-badge">
+        <div class="user-dot"></div>
+        <span id="user-name-display">User</span>
+      </div>
+      <button class="btn-logout" onclick="logout()">Sign Out</button>
+    </div>
+  </div>
+
+  <div class="app-body">
+
+    <!-- SIDEBAR -->
+    <div class="sidebar">
+      <div class="sidebar-section-label">Overview</div>
+      <div class="nav-item active" onclick="showPane('dashboard')">
+        <span class="nav-icon">⚡</span> Dashboard
+      </div>
+
+      <div class="sidebar-section-label">Track</div>
+      <div class="nav-item" onclick="showPane('meals')">
+        <span class="nav-icon">🍽️</span> Meals
+      </div>
+      <div class="nav-item" onclick="showPane('workout')">
+        <span class="nav-icon">🏋️</span> Workout
+      </div>
+      <div class="nav-item" onclick="showPane('cardio')">
+        <span class="nav-icon">🏃</span> Cardio
+      </div>
+      <div class="nav-item" onclick="showPane('recovery')">
+        <span class="nav-icon">💚</span> Recovery
+      </div>
+
+      <div class="sidebar-section-label">Progress</div>
+      <div class="nav-item" onclick="showPane('progress')">
+        <span class="nav-icon">📈</span> Progress
+      </div>
+
+      <div class="sidebar-section-label">Other</div>
+      <div class="nav-item" onclick="showPane('settings')">
+        <span class="nav-icon">⚙️</span> Settings
+      </div>
+
+      <div class="sidebar-footer">
+        <div style="font-size:11px; color:var(--muted); line-height:1.7">
+          <div>Today's steps</div>
+          <div style="font-family:'Syne',sans-serif; font-size:18px; font-weight:800; color:var(--lime)" id="sidebar-steps">0</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- CONTENT -->
+    <div class="main-content">
+
+      <!-- DASHBOARD -->
+      <div class="content-pane active" id="pane-dashboard">
+        <div class="pane-title">Good morning 👋</div>
+
+        <div class="target-bar">
+          <div class="target-item">🎯 Target: <span class="target-val" id="t-target">—</span>kg</div>
+          <div class="target-divider">·</div>
+          <div class="target-item">Current: <span class="target-val" id="t-current">—</span>kg</div>
+          <div class="target-divider">·</div>
+          <div class="target-item">Gap: <span class="target-val" id="t-gap">—</span>kg</div>
+          <div class="target-divider">·</div>
+          <div class="target-item">Visceral Fat: <span style="color:var(--danger); font-family:'Syne',sans-serif; font-weight:700" id="t-vf">—</span></div>
+        </div>
+
+        <div class="stats-grid">
+          <div class="stat-box" style="--accent-clr:var(--lime)">
+            <div class="stat-num" id="d-cal">0</div>
+            <div class="stat-label">Calories</div>
+            <div class="stat-sub">/ <span id="d-cal-target">1900</span> target</div>
+          </div>
+          <div class="stat-box" style="--accent-clr:var(--teal)">
+            <div class="stat-num" id="d-prot">0g</div>
+            <div class="stat-label">Protein</div>
+            <div class="stat-sub">/ <span id="d-prot-target">130</span>g target</div>
+          </div>
+          <div class="stat-box" style="--accent-clr:#3d8bff">
+            <div class="stat-num" id="d-steps">0</div>
+            <div class="stat-label">Steps</div>
+            <div class="stat-sub">/ 10,000 min</div>
+          </div>
+          <div class="stat-box" style="--accent-clr:var(--orange)">
+            <div class="stat-num" id="d-rec">—%</div>
+            <div class="stat-label">Recovery</div>
+            <div class="stat-sub">WHOOP today</div>
+          </div>
+        </div>
+
+        <div class="prog-section">
+          <div class="prog-section-title">Daily Targets</div>
+          <div class="prog-row">
+            <div class="prog-head">
+              <span class="prog-name">Protein</span>
+              <span class="prog-val" id="d-prot-prog">0 / 130g</span>
+            </div>
+            <div class="prog-track"><div class="prog-fill" id="fill-prot" style="--fill:var(--teal);width:0%"></div></div>
+          </div>
+          <div class="prog-row">
+            <div class="prog-head">
+              <span class="prog-name">Calories</span>
+              <span class="prog-val" id="d-cal-prog">0 / 1900</span>
+            </div>
+            <div class="prog-track"><div class="prog-fill" id="fill-cal" style="--fill:var(--lime);width:0%"></div></div>
+          </div>
+          <div class="prog-row" style="margin-bottom:0">
+            <div class="prog-head">
+              <span class="prog-name">Steps</span>
+              <span class="prog-val" id="d-steps-prog">0 / 10,000</span>
+            </div>
+            <div class="prog-track"><div class="prog-fill" id="fill-steps" style="--fill:#3d8bff;width:0%"></div></div>
+          </div>
+        </div>
+
+        <div class="section-card">
+          <div class="section-card-title">Today's Meals</div>
+          <div id="d-meals"><div class="empty-state"><div class="empty-icon">🍽️</div><div class="empty-text">No meals logged yet</div></div></div>
+        </div>
+
+        <div class="section-card">
+          <div class="section-card-title">Quick Steps Log</div>
+          <div style="display:flex;gap:10px">
+            <input type="number" class="form-input" id="q-steps" placeholder="Steps today..." style="flex:1">
+            <button class="btn btn-lime btn-sm" onclick="saveSteps()" style="width:auto;padding:0 20px">Save</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- MEALS -->
+      <div class="content-pane" id="pane-meals">
+        <div class="pane-title">Meal Logger</div>
+
+        <div class="section-card">
+          <div class="section-card-title">Log a Meal</div>
+          <div class="mb-12">
+            <label class="form-label">Meal Type</label>
+            <select class="form-input" id="m-type">
+              <option value="Breakfast">Breakfast</option>
+              <option value="Lunch">Lunch</option>
+              <option value="Snack">Snack</option>
+              <option value="Dinner">Dinner</option>
+              <option value="Post-workout">Post-workout</option>
+            </select>
+          </div>
+          <div class="mb-12">
+            <label class="form-label">Describe your meal</label>
+            <textarea class="form-input" id="m-desc" rows="3" placeholder="e.g. overnight oats 60g with 1 scoop protein, seeds, mango, pomegranate..."></textarea>
+          </div>
+          <div class="meal-photo-area" onclick="document.getElementById('m-photo').click()">
+            <div style="font-size:32px;margin-bottom:8px">📸</div>
+            <div style="font-size:14px;font-weight:500">Upload meal photo for AI analysis</div>
+            <div style="font-size:12px;color:var(--muted);margin-top:4px">Optional — describe above or upload</div>
+          </div>
+          <input type="file" id="m-photo" accept="image/*" style="display:none" onchange="handleMealPhoto(event)">
+          <img id="m-preview" class="preview-img">
+          <button class="btn btn-lime" onclick="analyzeMeal()">✨ Analyse with AI</button>
+          <div class="ai-box" id="meal-ai-box">
+            <div class="ai-box-label">
+              🤖 AI Analysis &nbsp;
+              <span class="loading-dot" id="meal-loading" style="display:none;color:var(--lime)"><span></span><span></span><span></span></span>
+            </div>
+            <div class="ai-box-text" id="meal-ai-text"></div>
+            <div class="macro-grid">
+              <div class="macro-input-wrap"><label>Calories</label><input type="number" class="form-input" id="m-cal" placeholder="kcal"></div>
+              <div class="macro-input-wrap"><label>Protein (g)</label><input type="number" class="form-input" id="m-prot" placeholder="g"></div>
+              <div class="macro-input-wrap"><label>Carbs (g)</label><input type="number" class="form-input" id="m-carbs" placeholder="g"></div>
+              <div class="macro-input-wrap"><label>Fat (g)</label><input type="number" class="form-input" id="m-fat" placeholder="g"></div>
+            </div>
+            <button class="btn btn-lime btn-sm" style="margin-top:14px" onclick="saveMeal()">✓ Save Meal</button>
+          </div>
+        </div>
+
+        <div class="section-card">
+          <div class="section-card-title">Today's Meals</div>
+          <div id="meals-list"><div class="empty-state"><div class="empty-icon">🍽️</div><div class="empty-text">No meals logged today</div></div></div>
+          <div style="display:flex;justify-content:space-between;font-size:13px;color:var(--muted);padding-top:14px;border-top:1px solid var(--border);margin-top:8px">
+            <span>Total today</span>
+            <span style="font-family:'Syne',sans-serif;font-weight:700">
+              <span style="color:var(--lime)" id="total-cal">0</span> kcal &nbsp;·&nbsp;
+              <span style="color:var(--teal)" id="total-prot">0</span>g protein
+            </span>
+          </div>
+        </div>
+      </div>
+
+      <!-- WORKOUT -->
+      <div class="content-pane" id="pane-workout">
+        <div class="pane-title">Gym Logger</div>
+
+        <div class="session-type-row">
+          <div class="session-btn" id="btn-push" onclick="setSession('Push')">💪 Push</div>
+          <div class="session-btn" id="btn-pull" onclick="setSession('Pull')">🔙 Pull</div>
+          <div class="session-btn" id="btn-legs" onclick="setSession('Legs')">🦵 Legs</div>
+        </div>
+
+        <div class="section-card">
+          <div class="section-card-title">Log Exercise</div>
+          <div class="mb-12">
+            <label class="form-label">Exercise Name</label>
+            <input type="text" class="form-input" id="ex-name" placeholder="e.g. Chest Press, Lat Pulldown...">
+          </div>
+          <div class="sets-container">
+            <label class="form-label">Sets</label>
+            <div id="sets-list"></div>
+            <button class="btn btn-outline btn-sm" style="width:auto;padding:0 16px;margin-top:6px" onclick="addSet()">+ Add Set</button>
+          </div>
+          <button class="btn btn-lime" style="margin-top:12px" onclick="logExercise()">Add Exercise</button>
+        </div>
+
+        <div class="section-card">
+          <div class="section-card-title">
+            Today's Session &nbsp;
+            <span style="color:var(--lime)" id="session-type-badge">Not Set</span>
+          </div>
+          <div id="ex-list"><div class="empty-state"><div class="empty-icon">🏋️</div><div class="empty-text">No exercises logged yet</div></div></div>
+        </div>
+
+        <div class="section-card">
+          <div class="section-card-title" style="color:var(--orange);">Reference — Last Session Targets</div>
+          <div class="ref-box" id="ref-box">Select Push / Pull / Legs above to see your targets.</div>
+        </div>
+      </div>
+
+      <!-- CARDIO -->
+      <div class="content-pane" id="pane-cardio">
+        <div class="pane-title">Cardio Logger</div>
+
+        <div class="section-card">
+          <div class="section-card-title">Log Session</div>
+          <div class="mb-12">
+            <label class="form-label">Type</label>
+            <select class="form-input" id="c-type">
+              <option value="Stairmaster">Stairmaster 🪜</option>
+              <option value="Treadmill">Treadmill 🏃</option>
+              <option value="Outdoor Run">Outdoor Run 🌳</option>
+              <option value="Rowing">Rowing 🚣</option>
+              <option value="Spinning">Spinning 🚴</option>
+              <option value="Cycling">Cycling 🚲</option>
+              <option value="Walking">Walking 🚶</option>
+            </select>
+          </div>
+          <div class="row-2 mb-12">
+            <div>
+              <label class="form-label">Duration (min)</label>
+              <input type="number" class="form-input" id="c-dur" placeholder="30">
+            </div>
+            <div>
+              <label class="form-label">Calories Burned</label>
+              <input type="number" class="form-input" id="c-cal" placeholder="300">
+            </div>
+          </div>
+          <div class="row-2 mb-16">
+            <div>
+              <label class="form-label">Speed / Level</label>
+              <input type="text" class="form-input" id="c-speed" placeholder="e.g. 9kmph / Level 8">
+            </div>
+            <div>
+              <label class="form-label">Incline / Resistance</label>
+              <input type="text" class="form-input" id="c-incline" placeholder="e.g. 2% / Level 7">
+            </div>
+          </div>
+          <button class="btn btn-lime" onclick="logCardio()">Log Cardio</button>
+        </div>
+
+        <div class="section-card">
+          <div class="section-card-title">Today's Cardio</div>
+          <div id="cardio-list"><div class="empty-state"><div class="empty-icon">🏃</div><div class="empty-text">No cardio logged today</div></div></div>
+          <div id="cardio-summary" style="display:none;text-align:right;font-size:13px;color:var(--muted);padding-top:12px;border-top:1px solid var(--border);margin-top:8px"></div>
+        </div>
+
+        <div class="section-card" style="border-left:3px solid var(--lime)">
+          <div class="section-card-title">Cardio Ranking — Your Goals</div>
+          <div style="font-size:14px;line-height:2.1;color:var(--muted)">
+            <div>🥇 <strong style="color:var(--text)">Rowing</strong> — Full body, 86% muscles, highest fat burn</div>
+            <div>🥈 <strong style="color:var(--text)">Spinning</strong> — Sustained high HR, 400-600 cal/hr</div>
+            <div>🥉 <strong style="color:var(--text)">Stairmaster</strong> — Target 300 cal / 40 min at Level 7-8</div>
+            <div>4️⃣ <strong style="color:var(--text)">Treadmill Run</strong> — 8-9 kmph, 1-2% incline only</div>
+            <div>5️⃣ <strong style="color:var(--text)">Cycling</strong> — Active recovery only</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- RECOVERY -->
+      <div class="content-pane" id="pane-recovery">
+        <div class="pane-title">WHOOP Recovery</div>
+
+        <div class="section-card">
+          <div class="section-card-title">Today's Reading</div>
+          <div class="row-2 mb-12">
+            <div>
+              <label class="form-label">Recovery Score (%)</label>
+              <input type="number" class="form-input" id="r-score" placeholder="0-100" min="0" max="100" oninput="previewRecovery()">
+            </div>
+            <div>
+              <label class="form-label">HRV (ms)</label>
+              <input type="number" class="form-input" id="r-hrv" placeholder="e.g. 44">
+            </div>
+          </div>
+          <div class="row-2 mb-16">
+            <div>
+              <label class="form-label">RHR (bpm)</label>
+              <input type="number" class="form-input" id="r-rhr" placeholder="e.g. 63">
+            </div>
+            <div>
+              <label class="form-label">Sleep (hrs)</label>
+              <input type="number" class="form-input" id="r-sleep" placeholder="e.g. 7.5" step="0.5">
+            </div>
+          </div>
+          <div id="rec-preview" style="display:none;margin-bottom:16px">
+            <div class="recovery-big">
+              <div class="rec-circle" id="rec-circle">—</div>
+              <div class="rec-text">
+                <h3 id="rec-label">—</h3>
+                <p id="rec-rec">Enter your score above</p>
+              </div>
+            </div>
+          </div>
+          <button class="btn btn-lime" onclick="saveRecovery()">Save Recovery</button>
+        </div>
+
+        <div class="section-card">
+          <div class="section-card-title">Decision Framework</div>
+          <div style="font-size:14px;line-height:2">
+            <div><span class="tag-green">🟢 67%+</span> &nbsp;Full strength session. Lift heavy today.</div>
+            <div style="margin-top:10px"><span class="tag-yellow">🟡 34-66%</span> &nbsp;Moderate cardio only. No strength training.</div>
+            <div style="margin-top:10px"><span class="tag-red">🔴 &lt;34%</span> &nbsp;Walk only. Protect recovery completely.</div>
+          </div>
+        </div>
+
+        <div class="section-card">
+          <div class="section-card-title">Your Baselines</div>
+          <div style="font-size:14px;line-height:2.2;color:var(--muted)">
+            <div>HRV Baseline: <strong style="color:var(--lime);font-family:'Syne',sans-serif" id="b-hrv">—</strong> ms → Target: 55ms+</div>
+            <div>RHR Baseline: <strong style="color:var(--lime);font-family:'Syne',sans-serif" id="b-rhr">—</strong> bpm → Target: &lt;65 bpm</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- PROGRESS -->
+      <div class="content-pane" id="pane-progress">
+        <div class="pane-title">Progress Tracker</div>
+
+        <div class="section-card">
+          <div class="section-card-title">Log Today's Weight</div>
+          <input type="number" class="weight-big-input mb-12" id="w-input" placeholder="90.3" step="0.1">
+          <button class="btn btn-lime" onclick="saveWeight()">Save Weight</button>
+        </div>
+
+        <div class="section-card">
+          <div class="section-card-title">Weight Log</div>
+          <div id="weight-log-display"><div class="empty-state"><div class="empty-icon">⚖️</div><div class="empty-text">No weights logged yet</div></div></div>
+        </div>
+
+        <div class="section-card">
+          <div class="section-card-title">InBody Comparison</div>
+          <table class="comparison-table">
+            <thead>
+              <tr><th>Metric</th><th>Jan 22, 2026</th><th>May 2, 2026</th><th>Change</th></tr>
+            </thead>
+            <tbody>
+              <tr><td>Weight</td><td>88.3 kg</td><td>90.3 kg</td><td class="up-bad">▲ +2kg</td></tr>
+              <tr><td>Body Fat</td><td>34.2 kg</td><td>35.4 kg</td><td class="up-bad">▲ +1.2kg</td></tr>
+              <tr><td>Muscle (SMM)</td><td>30.7 kg</td><td>30.9 kg</td><td class="up-good">▲ +0.2kg ✅</td></tr>
+              <tr><td>Visceral Fat</td><td>16</td><td>17 ⚠️</td><td class="up-bad">▲ +1</td></tr>
+              <tr><td>Body Fat %</td><td>38.7%</td><td>39.2%</td><td class="up-bad">▲ +0.5%</td></tr>
+              <tr><td>BMR</td><td>1,539 kcal</td><td>1,556 kcal</td><td class="up-good">▲ +17 ✅</td></tr>
+            </tbody>
+          </table>
+        </div>
+
+        <div class="section-card" style="border-left:3px solid var(--lime)">
+          <div class="section-card-title">Next Scan Targets — Aug 2026</div>
+          <div style="font-size:14px;line-height:2.3;color:var(--muted)">
+            <div>Weight: 90.3 → <strong style="color:var(--lime);font-family:'Syne',sans-serif">85 kg</strong></div>
+            <div>Visceral Fat: 17 → <strong style="color:var(--lime);font-family:'Syne',sans-serif">12 or below</strong></div>
+            <div>Body Fat %: 39.2 → <strong style="color:var(--lime);font-family:'Syne',sans-serif">35%</strong></div>
+            <div>Muscle: 30.9 → <strong style="color:var(--lime);font-family:'Syne',sans-serif">31.5 kg</strong></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- SETTINGS -->
+      <div class="content-pane" id="pane-settings">
+        <div class="pane-title">Settings</div>
+
+        <div class="section-card">
+          <div class="settings-section">
+            <div class="settings-title">Supabase Config</div>
+            <div class="form-group">
+              <label class="form-label">Supabase URL</label>
+              <input type="text" class="form-input" id="settings-sb-url" placeholder="https://xxx.supabase.co">
+            </div>
+            <div class="form-group">
+              <label class="form-label">Supabase Anon Key</label>
+              <input type="password" class="form-input" id="settings-sb-key" placeholder="eyJ...">
+            </div>
+            <button class="btn btn-lime btn-sm" style="width:auto;padding:0 20px" onclick="saveSupabaseConfig()">Save Config</button>
+          </div>
+        </div>
+
+        <div class="section-card">
+          <div class="settings-title">Your Profile</div>
+          <div id="profile-display" style="font-size:14px;line-height:2.3;color:var(--muted)">Loading...</div>
+          <button class="btn btn-outline btn-sm" style="margin-top:14px;width:auto;padding:0 16px" onclick="showPane('dashboard')">← Back to Dashboard</button>
+        </div>
+
+        <div class="section-card">
+          <div class="settings-title">Data</div>
+          <button class="btn btn-danger-outline btn-sm" style="width:auto;padding:0 20px" onclick="clearTodayData()">Clear Today's Data</button>
+        </div>
+      </div>
+
+    </div>
+
+    <!-- CHATBOT PANEL -->
+    <div class="chat-panel">
+      <div class="chat-header">
+        <div class="chat-avatar">🤖</div>
+        <div>
+          <div class="chat-title">AI Coach</div>
+          <div class="chat-subtitle">Powered by OpenAI GPT-4o</div>
+        </div>
+      </div>
+      <div class="chat-messages" id="chat-messages">
+        <div class="chat-msg assistant">
+          <div class="msg-bubble">Hey! I'm your Supa Lean coach. I know your profile, goals, and today's data. Ask me anything about meals, workouts, cravings, or recovery. 💪</div>
+          <div class="msg-time">Just now</div>
+        </div>
+      </div>
+      <div class="chat-input-area">
+        <div class="chat-suggestions" id="chat-suggestions">
+          <div class="suggest-chip" onclick="sendSuggestion(this)">What should I eat for lunch?</div>
+          <div class="suggest-chip" onclick="sendSuggestion(this)">Should I go to gym today?</div>
+          <div class="suggest-chip" onclick="sendSuggestion(this)">I'm craving junk food</div>
+          <div class="suggest-chip" onclick="sendSuggestion(this)">How much protein today?</div>
+        </div>
+        <div class="chat-input-row">
+          <textarea class="chat-input" id="chat-input" placeholder="Ask your coach..." rows="1" onkeydown="handleChatKey(event)"></textarea>
+          <button class="chat-send" onclick="sendChat()">→</button>
+        </div>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+// ===== CONFIG =====
+// OpenAI key lives on server (Vercel env vars) — never exposed to frontend
+// All AI calls go through /api/* serverless routes
+// Supabase URL + anon key are safe client-side (protected by Row Level Security)
+let SUPABASE_URL = localStorage.getItem('sl_sb_url') || '';
+let SUPABASE_KEY = localStorage.getItem('sl_sb_key') || '';
+const API_BASE = ''; // Empty = same origin (works on Vercel and localhost)
+
+let supabase = null;
+
+function initSupabase() {
+  if (SUPABASE_URL && SUPABASE_KEY) {
+    supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+  }
+}
+
+initSupabase();
+
+// ===== STATE =====
+let appState = {
+  user: null,
+  profile: null,
+  today: new Date().toDateString(),
+  meals: [],
+  exercises: [],
+  workoutType: null,
+  cardio: [],
+  steps: 0,
+  recovery: null,
+  weights: [],
+  sets: [],
+  chatHistory: []
+};
+
+function loadLocalState() {
+  const saved = localStorage.getItem('sl_state');
+  if (saved) {
+    const p = JSON.parse(saved);
+    if (p.today !== appState.today) {
+      p.meals = []; p.exercises = []; p.cardio = [];
+      p.steps = 0; p.recovery = null; p.workoutType = null;
+      p.sets = []; p.today = appState.today;
+    }
+    appState = { ...appState, ...p };
+  }
+}
+
+function saveLocalState() {
+  localStorage.setItem('sl_state', JSON.stringify(appState));
+}
+
+// ===== AUTH =====
+function switchAuthTab(tab) {
+  document.getElementById('signin-form').style.display = tab === 'signin' ? 'block' : 'none';
+  document.getElementById('signup-form').style.display = tab === 'signup' ? 'block' : 'none';
+  document.getElementById('tab-signin').classList.toggle('active', tab === 'signin');
+  document.getElementById('tab-signup').classList.toggle('active', tab === 'signup');
+}
+
+async function signIn() {
+  const email = document.getElementById('signin-email').value.trim();
+  const pass = document.getElementById('signin-pass').value;
+  const err = document.getElementById('signin-error');
+
+  if (!email || !pass) { showErr(err, 'Please fill all fields'); return; }
+
+  if (supabase) {
+    const { data, error } = await supabase.auth.signInWithPassword({ email, password: pass });
+    if (error) { showErr(err, error.message); return; }
+    appState.user = data.user;
+    await loadProfile();
+  } else {
+    // Demo mode without Supabase
+    appState.user = { id: 'demo', email, user_metadata: { full_name: 'Demo User' } };
+    const existing = localStorage.getItem('sl_profile');
+    if (existing) {
+      appState.profile = JSON.parse(existing);
+      enterApp();
+    } else {
+      enterOnboarding();
+    }
+    return;
+  }
+}
+
+async function signUp() {
+  const name = document.getElementById('signup-name').value.trim();
+  const email = document.getElementById('signup-email').value.trim();
+  const pass = document.getElementById('signup-pass').value;
+  const err = document.getElementById('signup-error');
+
+  if (!name || !email || !pass) { showErr(err, 'Please fill all fields'); return; }
+  if (pass.length < 8) { showErr(err, 'Password must be at least 8 characters'); return; }
+
+  if (supabase) {
+    const { data, error } = await supabase.auth.signUp({
+      email, password: pass,
+      options: { data: { full_name: name } }
+    });
+    if (error) { showErr(err, error.message); return; }
+    appState.user = data.user;
+  } else {
+    appState.user = { id: 'demo', email, user_metadata: { full_name: name } };
+  }
+
+  enterOnboarding();
+}
+
+function showErr(el, msg) {
+  el.textContent = msg;
+  el.style.display = 'block';
+  setTimeout(() => el.style.display = 'none', 4000);
+}
+
+async function loadProfile() {
+  if (!supabase || !appState.user) return;
+  const { data } = await supabase.from('profiles').select('*').eq('id', appState.user.id).single();
+  if (data) {
+    appState.profile = data;
+    enterApp();
+  } else {
+    enterOnboarding();
+  }
+}
+
+async function logout() {
+  if (supabase) await supabase.auth.signOut();
+  appState.user = null;
+  appState.profile = null;
+  document.getElementById('app-screen').style.display = 'none';
+  document.getElementById('auth-screen').style.display = 'flex';
+}
+
+// ===== ONBOARDING =====
+function enterOnboarding() {
+  document.getElementById('auth-screen').style.display = 'none';
+  document.getElementById('onboarding-screen').style.display = 'flex';
+}
+
+function chooseRoute(route) {
+  if (route === 'scan') goToStep('ob-step-2a');
+  else goToStep('ob-step-2b');
+}
+
+function goToStep(stepId) {
+  document.querySelectorAll('.onboard-step').forEach(s => s.classList.remove('active'));
+  document.getElementById(stepId).classList.add('active');
+}
+
+let inbodyPhotoBase64 = null;
+let inbodyAnalysis = null;
+
+async function analyzeInBody(e) {
+  const file = e.target.files[0];
+  if (!file) return;
+
+  const reader = new FileReader();
+  reader.onload = async (ev) => {
+    inbodyPhotoBase64 = ev.target.result.split(',')[1];
+    const preview = document.getElementById('inbody-preview');
+    preview.src = ev.target.result;
+    preview.style.display = 'block';
+
+    const box = document.getElementById('scan-analysis-box');
+    box.style.display = 'block';
+    document.getElementById('scan-loading').style.display = 'inline-flex';
+    document.getElementById('scan-analysis-text').textContent = 'Reading your InBody scan...';
+
+    try {
+      const res = await callAnalyzeInBody(ev.target.result);
+      inbodyAnalysis = res.data || {};
+
+      const lines = Object.entries(inbodyAnalysis)
+        .filter(([_, v]) => v !== null)
+        .map(([k, v]) => `${k.replace(/_/g, ' ')}: <strong>${v}</strong>`)
+        .join('<br>');
+
+      document.getElementById('scan-loading').style.display = 'none';
+      document.getElementById('scan-analysis-text').innerHTML = '✅ Scan read successfully!<br><br>' + lines;
+      document.getElementById('scan-next-btn').disabled = false;
+    } catch (err) {
+      document.getElementById('scan-loading').style.display = 'none';
+      document.getElementById('scan-analysis-text').textContent = 'Could not read scan. Please continue and enter values manually.';
+      document.getElementById('scan-next-btn').disabled = false;
+    }
+  };
+  reader.readAsDataURL(file);
+}
+
+function goToStep3() {
+  goToStep('ob-step-3');
+}
+
+function suggestTargets() {
+  const w = parseFloat(document.getElementById('manual-weight').value);
+  const h = parseFloat(document.getElementById('manual-height').value);
+  const box = document.getElementById('ai-targets-box');
+  const text = document.getElementById('ai-targets-text');
+
+  if (!w) { box.style.display = 'none'; return; }
+
+  let suggestions = [];
+
+  const cal = Math.round(1800 + (w > 80 ? 150 : 0));
+  suggestions.push(`Daily calories: ~${cal} kcal (deficit for fat loss)`);
+  suggestions.push(`Daily protein: ~${Math.round(w * 1.5)}g (protects muscle while losing fat)`);
+
+  if (h) {
+    const bmi = (w / ((h/100)**2)).toFixed(1);
+    suggestions.push(`Estimated BMI: ${bmi}`);
+  }
+
+  suggestions.push(`Minimum steps: 10,000/day`);
+  suggestions.push(`Strength training: 3x/week minimum`);
+
+  box.style.display = 'block';
+  text.innerHTML = suggestions.join('<br>');
+}
+
+function saveManualProfile() {
+  const w = parseFloat(document.getElementById('manual-weight').value);
+  const target = parseFloat(document.getElementById('manual-target').value);
+
+  if (!w || !target) {
+    showToast('Current weight and ideal weight are required', 'error');
+    return;
+  }
+
+  inbodyAnalysis = {
+    weight: w,
+    target_weight: target,
+    body_fat_percent: parseFloat(document.getElementById('manual-bf').value) || null,
+    visceral_fat_level: parseFloat(document.getElementById('manual-vf').value) || null,
+  };
+
+  goToStep3();
+}
+
+async function finishOnboarding() {
+
+  const profile = {
+    id: appState.user?.id,
+    name: appState.user?.user_metadata?.full_name || 'User',
+    email: appState.user?.email,
+    ...inbodyAnalysis,
+    daily_cal_target: Math.round(1800 + ((inbodyAnalysis?.weight || 80) > 80 ? 150 : 0)),
+    daily_protein_target: Math.round((inbodyAnalysis?.weight || 75) * 1.5),
+    created_at: new Date().toISOString()
+  };
+
+  appState.profile = profile;
+  localStorage.setItem('sl_profile', JSON.stringify(profile));
+
+  if (supabase && appState.user) {
+    await supabase.from('profiles').upsert(profile);
+  }
+
+  enterApp();
+}
+
+// ===== APP =====
+function enterApp() {
+  loadLocalState();
+  document.getElementById('auth-screen').style.display = 'none';
+  document.getElementById('onboarding-screen').style.display = 'none';
+  document.getElementById('app-screen').style.flex = '1';
+  document.getElementById('app-screen').style.display = 'flex';
+
+  const name = appState.user?.user_metadata?.full_name || appState.user?.email?.split('@')[0] || 'User';
+  document.getElementById('user-name-display').textContent = name;
+  document.querySelector('.pane-title').textContent = `Good ${getGreeting()}, ${name.split(' ')[0]} 👋`;
+
+  // API key is on server — no client-side key needed
+
+  // Set Supabase config in settings
+  const savedUrl = localStorage.getItem('sl_sb_url');
+  const savedSbKey = localStorage.getItem('sl_sb_key');
+  if (savedUrl) document.getElementById('settings-sb-url').value = savedUrl;
+  if (savedSbKey) document.getElementById('settings-sb-key').value = savedSbKey;
+
+  updateDashboard();
+  renderAll();
+  loadProfileDisplay();
+}
+
+function getGreeting() {
+  const h = new Date().getHours();
+  if (h < 12) return 'morning';
+  if (h < 17) return 'afternoon';
+  return 'evening';
+}
+
+function showPane(name) {
+  document.querySelectorAll('.content-pane').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+  document.getElementById('pane-' + name).classList.add('active');
+  document.querySelectorAll('.nav-item').forEach(n => {
+    if (n.textContent.trim().toLowerCase().includes(name)) n.classList.add('active');
+  });
+
+  if (name === 'settings') loadProfileDisplay();
+}
+
+// ===== DASHBOARD =====
+function updateDashboard() {
+  const totalCal = appState.meals.reduce((s, m) => s + (m.calories || 0), 0);
+  const totalProt = appState.meals.reduce((s, m) => s + (m.protein || 0), 0);
+  const calTarget = appState.profile?.daily_cal_target || 1900;
+  const protTarget = appState.profile?.daily_protein_target || 130;
+
+  document.getElementById('d-cal').textContent = totalCal;
+  document.getElementById('d-prot').textContent = totalProt + 'g';
+  document.getElementById('d-steps').textContent = appState.steps.toLocaleString();
+  document.getElementById('d-rec').textContent = appState.recovery ? appState.recovery.score + '%' : '—%';
+  document.getElementById('d-cal-target').textContent = calTarget;
+  document.getElementById('d-prot-target').textContent = protTarget;
+
+  document.getElementById('fill-prot').style.width = Math.min(100, (totalProt / protTarget) * 100) + '%';
+  document.getElementById('d-prot-prog').textContent = `${totalProt} / ${protTarget}g`;
+  document.getElementById('fill-cal').style.width = Math.min(100, (totalCal / calTarget) * 100) + '%';
+  document.getElementById('d-cal-prog').textContent = `${totalCal} / ${calTarget}`;
+  document.getElementById('fill-steps').style.width = Math.min(100, (appState.steps / 10000) * 100) + '%';
+  document.getElementById('d-steps-prog').textContent = `${appState.steps.toLocaleString()} / 10,000`;
+  document.getElementById('sidebar-steps').textContent = appState.steps.toLocaleString();
+
+  // Target bar
+  const p = appState.profile;
+  if (p) {
+    document.getElementById('t-target').textContent = p.target_weight || '80';
+    const weights = appState.weights;
+    const latest = weights.length > 0 ? weights[weights.length - 1].weight : (p.weight || '—');
+    document.getElementById('t-current').textContent = latest;
+    const gap = latest !== '—' ? (parseFloat(latest) - parseFloat(p.target_weight || 80)).toFixed(1) : '—';
+    document.getElementById('t-gap').textContent = gap > 0 ? gap : '0';
+    document.getElementById('t-vf').textContent = p.visceral_fat_level ? `${p.visceral_fat_level} (target: 9)` : '—';
+  }
+
+  // Recovery baselines
+  if (p) {
+    document.getElementById('b-hrv').textContent = p.hrv_baseline || '44';
+    document.getElementById('b-rhr').textContent = p.rhr_baseline || '63';
+  }
+
+  // Meals on dashboard
+  const dm = document.getElementById('d-meals');
+  if (appState.meals.length === 0) {
+    dm.innerHTML = '<div class="empty-state"><div class="empty-icon">🍽️</div><div class="empty-text">No meals logged yet</div></div>';
+  } else {
+    dm.innerHTML = appState.meals.slice(-3).map(m =>
+      `<div class="meal-list-item">
+        <div class="meal-info">
+          <div class="meal-name"><span class="type-tag">${m.type}</span>${m.name}</div>
+        </div>
+        <div class="meal-badges">
+          <span class="mbadge mbadge-cal">${m.calories} kcal</span>
+          <span class="mbadge mbadge-prot">${m.protein}g P</span>
+        </div>
+      </div>`
+    ).join('');
+  }
+}
+
+// ===== STEPS =====
+function saveSteps() {
+  const v = parseInt(document.getElementById('q-steps').value);
+  if (!v || v < 0) { showToast('Enter valid steps', 'error'); return; }
+  appState.steps = v;
+  saveLocalState();
+  updateDashboard();
+  document.getElementById('q-steps').value = '';
+  showToast('Steps saved: ' + v.toLocaleString() + ' 👟');
+}
+
+// ===== MEALS =====
+let mealPhotoBase64 = null;
+
+function handleMealPhoto(e) {
+  const file = e.target.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = (ev) => {
+    mealPhotoBase64 = ev.target.result;
+    const preview = document.getElementById('m-preview');
+    preview.src = ev.target.result;
+    preview.style.display = 'block';
+  };
+  reader.readAsDataURL(file);
+}
+
+async function analyzeMeal() {
+  const desc = document.getElementById('m-desc').value;
+  if (!desc && !mealPhotoBase64) { showToast('Describe meal or upload photo', 'error'); return; }
+
+  const box = document.getElementById('meal-ai-box');
+  const textEl = document.getElementById('meal-ai-text');
+  const loading = document.getElementById('meal-loading');
+
+  box.classList.add('show');
+  loading.style.display = 'inline-flex';
+  textEl.textContent = 'Analysing...';
+
+  try {
+    const res = await callAnalyzeMeal(desc, mealPhotoBase64, appState.profile);
+    loading.style.display = 'none';
+    textEl.innerHTML = res.text.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>').replace(/\n/g, '<br>');
+
+    if (res.parsed) {
+      if (res.parsed.calories) document.getElementById('m-cal').value = res.parsed.calories;
+      if (res.parsed.protein) document.getElementById('m-prot').value = res.parsed.protein;
+      if (res.parsed.carbs) document.getElementById('m-carbs').value = res.parsed.carbs;
+      if (res.parsed.fat) document.getElementById('m-fat').value = res.parsed.fat;
+    }
+  } catch (err) {
+    loading.style.display = 'none';
+    textEl.textContent = 'AI analysis unavailable. Enter values manually below.';
+  }
+}
+
+function saveMeal() {
+  const type = document.getElementById('m-type').value;
+  const name = document.getElementById('m-desc').value.substring(0, 60) || 'Meal';
+  const cal = parseInt(document.getElementById('m-cal').value) || 0;
+  const prot = parseInt(document.getElementById('m-prot').value) || 0;
+  const carbs = parseInt(document.getElementById('m-carbs').value) || 0;
+  const fat = parseInt(document.getElementById('m-fat').value) || 0;
+
+  appState.meals.push({ type, name, calories: cal, protein: prot, carbs, fat,
+    time: new Date().toLocaleTimeString('en', {hour:'2-digit', minute:'2-digit'}) });
+  saveLocalState();
+  renderMeals();
+  updateDashboard();
+
+  // Reset
+  document.getElementById('m-desc').value = '';
+  document.getElementById('m-preview').style.display = 'none';
+  document.getElementById('meal-ai-box').classList.remove('show');
+  ['m-cal','m-prot','m-carbs','m-fat'].forEach(id => document.getElementById(id).value = '');
+  mealPhotoBase64 = null;
+  showToast('Meal saved! 🍽️');
+}
+
+function renderMeals() {
+  const list = document.getElementById('meals-list');
+  if (appState.meals.length === 0) {
+    list.innerHTML = '<div class="empty-state"><div class="empty-icon">🍽️</div><div class="empty-text">No meals logged today</div></div>';
+  } else {
+    list.innerHTML = appState.meals.map((m, i) =>
+      `<div class="meal-list-item">
+        <div class="meal-info">
+          <div class="meal-name"><span class="type-tag">${m.type}</span>${m.name}</div>
+          <div class="meal-meta">${m.time} · C:${m.carbs}g · F:${m.fat}g</div>
+        </div>
+        <div class="meal-badges">
+          <span class="mbadge mbadge-cal">${m.calories}</span>
+          <span class="mbadge mbadge-prot">${m.protein}g P</span>
+        </div>
+        <button class="del-btn" onclick="deleteMeal(${i})">×</button>
+      </div>`
+    ).join('');
+  }
+  const tc = appState.meals.reduce((s,m)=>s+(m.calories||0),0);
+  const tp = appState.meals.reduce((s,m)=>s+(m.protein||0),0);
+  document.getElementById('total-cal').textContent = tc;
+  document.getElementById('total-prot').textContent = tp;
+}
+
+function deleteMeal(i) {
+  appState.meals.splice(i, 1);
+  saveLocalState();
+  renderMeals();
+  updateDashboard();
+}
+
+// ===== WORKOUT =====
+let currentSets = [];
+
+function setSession(type) {
+  appState.workoutType = type;
+  saveLocalState();
+  document.querySelectorAll('.session-btn').forEach(b => b.classList.remove('selected'));
+  document.getElementById('btn-' + type.toLowerCase()).classList.add('selected');
+  document.getElementById('session-type-badge').textContent = type + ' Day';
+  showRef(type);
+}
+
+function showRef(type) {
+  const refs = {
+    Push: `<strong style="color:var(--lime)">Push Day Targets:</strong><br>Chest Press: 35kg → 40kg<br>Shoulder Press (DB): 10kg each<br>Lateral Raises: 6kg each<br>Tricep Pushdown: 20kg<br><span style="color:var(--danger)">⚠️ Bicep curls minimum 8-10kg</span>`,
+    Pull: `<strong style="color:var(--lime)">Pull Day Targets:</strong><br>Lat Pulldown: 35kg → 40kg<br>Seated Cable Row: 25-27kg<br>Face Pulls: start 12.5kg<br>Bicep Curl: 8-10kg each<br><span style="color:var(--danger)">⚠️ Learn Single Arm DB Row</span>`,
+    Legs: `<strong style="color:var(--lime)">Leg Day Targets:</strong><br>Leg Press: 80kg → 140kg<br>Leg Extension: start 30kg<br>Leg Curl: 30-30-35kg<br>Goblet Squat: 10-12kg<br><span style="color:var(--danger)">⚠️ Add Romanian Deadlift 20kg</span>`
+  };
+  document.getElementById('ref-box').innerHTML = refs[type] || 'No reference available.';
+}
+
+function addSet() {
+  currentSets.push({ weight: '', reps: 12 });
+  renderSets();
+}
+
+function renderSets() {
+  const c = document.getElementById('sets-list');
+  c.innerHTML = currentSets.map((s, i) =>
+    `<div class="set-row">
+      <input type="number" class="form-input" placeholder="Weight (kg)" value="${s.weight}" oninput="currentSets[${i}].weight=this.value" style="padding:10px 12px">
+      <input type="number" class="form-input" placeholder="Reps" value="${s.reps}" oninput="currentSets[${i}].reps=this.value" style="padding:10px 12px">
+      <button class="del-btn" onclick="currentSets.splice(${i},1);renderSets()">×</button>
+    </div>`
+  ).join('');
+}
+
+function logExercise() {
+  const name = document.getElementById('ex-name').value.trim();
+  if (!name) { showToast('Enter exercise name', 'error'); return; }
+  if (currentSets.length === 0) { showToast('Add at least one set', 'error'); return; }
+  appState.exercises.push({ name, sets: [...currentSets], type: appState.workoutType });
+  saveLocalState();
+  renderExercises();
+  updateDashboard();
+  document.getElementById('ex-name').value = '';
+  currentSets = [];
+  renderSets();
+  showToast(name + ' logged! 💪');
+}
+
+function renderExercises() {
+  const list = document.getElementById('ex-list');
+  if (appState.exercises.length === 0) {
+    list.innerHTML = '<div class="empty-state"><div class="empty-icon">🏋️</div><div class="empty-text">No exercises logged yet</div></div>';
+    return;
+  }
+  list.innerHTML = appState.exercises.map((ex, i) =>
+    `<div class="ex-item">
+      <div class="ex-item-header">
+        <span class="ex-name">${ex.name}</span>
+        <button class="del-btn" onclick="appState.exercises.splice(${i},1);saveLocalState();renderExercises()">×</button>
+      </div>
+      <div class="set-chips">
+        ${ex.sets.map((s,si)=>`<span class="set-chip">S${si+1}: ${s.weight}kg × ${s.reps}</span>`).join('')}
+      </div>
+    </div>`
+  ).join('');
+}
+
+// ===== CARDIO =====
+function logCardio() {
+  const type = document.getElementById('c-type').value;
+  const dur = parseInt(document.getElementById('c-dur').value) || 0;
+  const cal = parseInt(document.getElementById('c-cal').value) || 0;
+  const speed = document.getElementById('c-speed').value;
+  const incline = document.getElementById('c-incline').value;
+  if (!dur) { showToast('Enter duration', 'error'); return; }
+  appState.cardio.push({ type, duration: dur, calories: cal, speed, incline,
+    time: new Date().toLocaleTimeString('en', {hour:'2-digit', minute:'2-digit'}) });
+  saveLocalState();
+  renderCardio();
+  updateDashboard();
+  ['c-dur','c-cal','c-speed','c-incline'].forEach(id => document.getElementById(id).value = '');
+  showToast(type + ' logged! 🔥');
+}
+
+function renderCardio() {
+  const list = document.getElementById('cardio-list');
+  if (appState.cardio.length === 0) {
+    list.innerHTML = '<div class="empty-state"><div class="empty-icon">🏃</div><div class="empty-text">No cardio logged today</div></div>';
+    document.getElementById('cardio-summary').style.display = 'none';
+    return;
+  }
+  list.innerHTML = appState.cardio.map((c, i) =>
+    `<div class="cardio-item">
+      <div class="cardio-info">
+        <h4>${c.type}</h4>
+        <div class="cardio-meta">${c.duration} min${c.speed ? ' · ' + c.speed : ''}${c.incline ? ' · ' + c.incline : ''}</div>
+      </div>
+      <div class="cardio-right">
+        ${c.calories ? `<span class="mbadge mbadge-cal">${c.calories} cal</span>` : ''}
+        <button class="del-btn" onclick="appState.cardio.splice(${i},1);saveLocalState();renderCardio()">×</button>
+      </div>
+    </div>`
+  ).join('');
+  const tc = appState.cardio.reduce((s,c)=>s+(c.calories||0),0);
+  const td = appState.cardio.reduce((s,c)=>s+(c.duration||0),0);
+  const sumEl = document.getElementById('cardio-summary');
+  sumEl.style.display = 'block';
+  sumEl.innerHTML = `Total: <strong style="color:var(--lime)">${tc} cal</strong> burned in <strong style="color:var(--lime)">${td} min</strong>`;
+}
+
+// ===== RECOVERY =====
+function previewRecovery() {
+  const score = parseInt(document.getElementById('r-score').value);
+  if (!score) return;
+  const preview = document.getElementById('rec-preview');
+  const circle = document.getElementById('rec-circle');
+  const label = document.getElementById('rec-label');
+  const rec = document.getElementById('rec-rec');
+  preview.style.display = 'flex';
+  circle.textContent = score + '%';
+  if (score >= 67) {
+    circle.style.cssText = 'background:rgba(0,214,143,0.15);border-color:var(--success);color:var(--success);width:88px;height:88px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-family:Syne,sans-serif;font-size:26px;font-weight:800;flex-shrink:0;border:3px solid';
+    label.textContent = '🟢 Green — Lift Heavy';
+    rec.textContent = 'Full strength session today. Push your target weights. Body is ready.';
+  } else if (score >= 34) {
+    circle.style.cssText = 'background:rgba(255,170,0,0.15);border-color:var(--warning);color:var(--warning);width:88px;height:88px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-family:Syne,sans-serif;font-size:26px;font-weight:800;flex-shrink:0;border:3px solid';
+    label.textContent = '🟡 Yellow — Cardio Only';
+    rec.textContent = 'Moderate cardio. Stairmaster or treadmill run. No strength today.';
+  } else {
+    circle.style.cssText = 'background:rgba(255,68,85,0.15);border-color:var(--danger);color:var(--danger);width:88px;height:88px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-family:Syne,sans-serif;font-size:26px;font-weight:800;flex-shrink:0;border:3px solid';
+    label.textContent = '🔴 Red — Rest Day';
+    rec.textContent = 'Walk only. Gym is off. Protect recovery completely. Sleep early tonight.';
+  }
+}
+
+function saveRecovery() {
+  const score = parseInt(document.getElementById('r-score').value);
+  if (!score) { showToast('Enter recovery score', 'error'); return; }
+  appState.recovery = {
+    score,
+    hrv: parseInt(document.getElementById('r-hrv').value) || null,
+    rhr: parseInt(document.getElementById('r-rhr').value) || null,
+    sleep: parseFloat(document.getElementById('r-sleep').value) || null
+  };
+  saveLocalState();
+  updateDashboard();
+  showToast('Recovery saved! ' + (score >= 67 ? '🟢' : score >= 34 ? '🟡' : '🔴'));
+}
+
+// ===== PROGRESS =====
+function saveWeight() {
+  const w = parseFloat(document.getElementById('w-input').value);
+  if (!w) { showToast('Enter weight', 'error'); return; }
+  if (!appState.weights) appState.weights = [];
+  appState.weights.push({ weight: w, date: new Date().toLocaleDateString() });
+  saveLocalState();
+  renderWeightLog();
+  updateDashboard();
+  document.getElementById('w-input').value = '';
+  showToast('Weight saved: ' + w + 'kg ⚖️');
+}
+
+function renderWeightLog() {
+  const el = document.getElementById('weight-log-display');
+  if (!appState.weights || appState.weights.length === 0) {
+    el.innerHTML = '<div class="empty-state"><div class="empty-icon">⚖️</div><div class="empty-text">No weights logged yet</div></div>';
+    return;
+  }
+  const target = appState.profile?.target_weight || 80;
+  el.innerHTML = [...appState.weights].reverse().map(w => {
+    const diff = (w.weight - target).toFixed(1);
+    const cls = diff > 5 ? 'up-bad' : diff > 0 ? 'up-bad' : 'up-good';
+    return `<div style="display:flex;justify-content:space-between;padding:12px 0;border-bottom:1px solid var(--border);font-size:14px">
+      <span style="color:var(--muted)">${w.date}</span>
+      <span class="${cls}" style="font-size:16px">${w.weight}kg <span style="font-size:12px;opacity:0.7">(${diff > 0 ? '+' : ''}${diff}kg to target)</span></span>
+    </div>`;
+  }).join('');
+}
+
+// ===== SETTINGS =====
+
+function saveSupabaseConfig() {
+  const url = document.getElementById('settings-sb-url').value.trim();
+  const key = document.getElementById('settings-sb-key').value.trim();
+  if (!url || !key) { showToast('Enter both URL and key', 'error'); return; }
+  SUPABASE_URL = url;
+  SUPABASE_KEY = key;
+  localStorage.setItem('sl_sb_url', url);
+  localStorage.setItem('sl_sb_key', key);
+  initSupabase();
+  showToast('Supabase configured ✅');
+}
+
+function loadProfileDisplay() {
+  const p = appState.profile;
+  if (!p) { document.getElementById('profile-display').textContent = 'No profile loaded.'; return; }
+  document.getElementById('profile-display').innerHTML = `
+    <div style="line-height:2.3;color:var(--muted)">
+      <div>Name: <strong style="color:var(--text)">${p.name || '—'}</strong></div>
+      <div>Email: <strong style="color:var(--text)">${p.email || '—'}</strong></div>
+      <div>Current Weight: <strong style="color:var(--lime)">${p.weight || '—'}kg</strong></div>
+      <div>Target Weight: <strong style="color:var(--lime)">${p.target_weight || '—'}kg</strong></div>
+      <div>Visceral Fat: <strong style="color:var(--danger)">${p.visceral_fat_level || '—'}</strong></div>
+      <div>Daily Calories Target: <strong style="color:var(--text)">${p.daily_cal_target || '—'} kcal</strong></div>
+      <div>Daily Protein Target: <strong style="color:var(--text)">${p.daily_protein_target || '—'}g</strong></div>
+    </div>`;
+}
+
+function clearTodayData() {
+  if (!confirm('Clear all today\'s data?')) return;
+  appState.meals = [];
+  appState.exercises = [];
+  appState.cardio = [];
+  appState.steps = 0;
+  appState.recovery = null;
+  appState.workoutType = null;
+  saveLocalState();
+  renderAll();
+  updateDashboard();
+  showToast('Today\'s data cleared');
+}
+
+// ===== CHATBOT =====
+async function sendChat() {
+  const input = document.getElementById('chat-input');
+  const msg = input.value.trim();
+  if (!msg) return;
+  input.value = '';
+  addChatMsg('user', msg);
+  await getAIResponse(msg);
+}
+
+function sendSuggestion(el) {
+  document.getElementById('chat-input').value = el.textContent;
+  sendChat();
+}
+
+function handleChatKey(e) {
+  if (e.key === 'Enter' && !e.shiftKey) {
+    e.preventDefault();
+    sendChat();
+  }
+}
+
+function addChatMsg(role, text) {
+  const msgs = document.getElementById('chat-messages');
+  const div = document.createElement('div');
+  div.className = 'chat-msg ' + role;
+  const time = new Date().toLocaleTimeString('en', {hour:'2-digit', minute:'2-digit'});
+  div.innerHTML = `<div class="msg-bubble">${text.replace(/\n/g,'<br>').replace(/\*\*(.*?)\*\*/g,'<strong>$1</strong>')}</div><div class="msg-time">${time}</div>`;
+  msgs.appendChild(div);
+  msgs.scrollTop = msgs.scrollHeight;
+  appState.chatHistory.push({ role, content: text });
+}
+
+async function getAIResponse(userMsg) {
+  const p = appState.profile;
+  const totalCal = appState.meals.reduce((s,m)=>s+(m.calories||0),0);
+  const totalProt = appState.meals.reduce((s,m)=>s+(m.protein||0),0);
+
+  const systemPrompt = `You are a strict, results-driven fitness coach for ${p?.name || 'the user'}.
+
+Profile: Weight ${p?.weight || '—'}kg → Target ${p?.target_weight || 80}kg. Visceral Fat ${p?.visceral_fat_level || '—'} (CRITICAL — normal is 1-9). Daily cal target: ${p?.daily_cal_target || 1900}. Protein target: ${p?.daily_protein_target || 130}g.
+
+Today so far: ${totalCal} kcal, ${totalProt}g protein, ${appState.steps} steps. Recovery: ${appState.recovery?.score || '—'}%.
+Workout: ${appState.workoutType || 'None logged'}. Exercises: ${appState.exercises.length}.
+
+Rules: Be strict but empathetic. Always explain the WHY — user is an ENFP who follows logic not rules. Reference actual numbers. Never just say "good job" without checking if it actually was. Keep responses concise — 3-5 sentences max. If they mention craving junk, acknowledge the psychology first, then redirect.`;
+
+  const messages = [
+    { role: 'system', content: systemPrompt },
+    ...appState.chatHistory.slice(-10).map(m => ({ role: m.role, content: m.content })),
+    { role: 'user', content: userMsg }
+  ];
+
+  // Show typing indicator
+  const msgs = document.getElementById('chat-messages');
+  const typing = document.createElement('div');
+  typing.className = 'chat-msg assistant';
+  typing.id = 'typing-indicator';
+  typing.innerHTML = `<div class="msg-bubble"><span class="loading-dot" style="color:var(--muted)"><span></span><span></span><span></span></span></div>`;
+  msgs.appendChild(typing);
+  msgs.scrollTop = msgs.scrollHeight;
+
+  try {
+    const res = await callChat(messages);
+    const reply = res.choices[0].message.content;
+    typing.remove();
+    addChatMsg('assistant', reply);
+  } catch (err) {
+    typing.remove();
+    addChatMsg('assistant', 'Add your OpenAI API key in Settings to enable the AI coach. Go to Settings → OpenAI API Key.');
+  }
+}
+
+// ===== API CALLS (server-side proxied) =====
+// All AI calls go through Vercel serverless functions
+// Your OpenAI key stays safe on the server
+
+async function callChat(messages) {
+  const res = await fetch(API_BASE + '/api/chat', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ messages, model: 'gpt-4o' })
+  });
+  if (!res.ok) {
+    const err = await res.json();
+    throw new Error(err.error || 'API error ' + res.status);
+  }
+  return res.json();
+}
+
+async function callAnalyzeMeal(description, imageBase64, userProfile) {
+  const res = await fetch(API_BASE + '/api/analyze-meal', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ description, imageBase64, userProfile })
+  });
+  if (!res.ok) throw new Error('Meal analysis failed');
+  return res.json();
+}
+
+async function callAnalyzeInBody(imageBase64) {
+  const res = await fetch(API_BASE + '/api/analyze-inbody', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ imageBase64 })
+  });
+  if (!res.ok) throw new Error('InBody analysis failed');
+  return res.json();
+}
+
+// ===== RENDER ALL =====
+function renderAll() {
+  renderMeals();
+  renderExercises();
+  renderCardio();
+  renderWeightLog();
+  if (appState.workoutType) {
+    setSession(appState.workoutType);
+  }
+  if (appState.recovery) {
+    document.getElementById('r-score').value = appState.recovery.score;
+    previewRecovery();
+  }
+}
+
+// ===== TOAST =====
+function showToast(msg, type = 'success') {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.className = 'toast' + (type === 'error' ? ' error' : '');
+  t.classList.add('show');
+  setTimeout(() => t.classList.remove('show'), 3000);
+}
+
+// ===== AUTO-LOGIN CHECK =====
+window.addEventListener('DOMContentLoaded', async () => {
+  if (supabase) {
+    const { data: { session } } = await supabase.auth.getSession();
+    if (session) {
+      appState.user = session.user;
+      await loadProfile();
+    }
+  } else {
+    // Check for existing demo profile
+    const existing = localStorage.getItem('sl_profile');
+    if (existing) {
+      appState.user = { id: 'demo', email: 'demo@supalean.app', user_metadata: { full_name: 'Demo User' } };
+      appState.profile = JSON.parse(existing);
+      enterApp();
+    }
+  }
+
+  // API key lives on server — nothing to load
+});
+</script>
+</body>
+</html>
