@@ -1231,6 +1231,62 @@ body {
 
 .toast.error { background: var(--danger); color: #fff; }
 
+
+/* ===== MOBILE BOTTOM NAV ===== */
+@media (max-width: 768px) {
+  .app-body { flex-direction: column; }
+  .sidebar { display: none !important; }
+  .chat-panel { display: none !important; }
+  .main-content { flex: 1; overflow-y: auto; padding-bottom: 80px; }
+  .content-pane { padding: 16px; }
+  
+  .mobile-nav {
+    display: flex !important;
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    background: var(--bg2);
+    border-top: 1px solid var(--border);
+    z-index: 100;
+    padding: 8px 4px;
+    padding-bottom: calc(8px + env(safe-area-inset-bottom));
+  }
+
+  .mobile-nav-item {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 3px;
+    padding: 6px 4px;
+    border-radius: 10px;
+    cursor: pointer;
+    transition: all 0.15s;
+    border: none;
+    background: transparent;
+    color: var(--muted);
+  }
+
+  .mobile-nav-item.active { color: var(--lime); }
+  .mobile-nav-item .m-icon { font-size: 20px; line-height: 1; }
+  .mobile-nav-item .m-label { font-size: 10px; font-family: 'Syne', sans-serif; font-weight: 700; letter-spacing: 0.3px; }
+
+  .pane-title { font-size: 18px; margin-bottom: 16px; }
+  .stats-grid { grid-template-columns: repeat(2, 1fr); gap: 10px; }
+  .stat-num { font-size: 22px; }
+  .row-2 { grid-template-columns: 1fr; }
+  .macro-grid { grid-template-columns: repeat(2, 1fr); }
+  .session-type-row { grid-template-columns: repeat(3, 1fr); }
+  .app-header { padding: 12px 16px; }
+  .app-logo { font-size: 18px; }
+  .user-badge span { display: none; }
+}
+
+@media (min-width: 769px) {
+  .mobile-nav { display: none; }
+}
+
 /* SCROLLBAR */
 ::-webkit-scrollbar { width: 4px; }
 ::-webkit-scrollbar-track { background: transparent; }
@@ -1867,6 +1923,35 @@ body {
   </div>
 </div>
 
+
+  <!-- MOBILE BOTTOM NAV -->
+  <div class="mobile-nav" id="mobile-nav">
+    <button class="mobile-nav-item active" onclick="showPaneMobile('dashboard', this)">
+      <span class="m-icon">⚡</span>
+      <span class="m-label">Home</span>
+    </button>
+    <button class="mobile-nav-item" onclick="showPaneMobile('meals', this)">
+      <span class="m-icon">🍽️</span>
+      <span class="m-label">Meals</span>
+    </button>
+    <button class="mobile-nav-item" onclick="showPaneMobile('workout', this)">
+      <span class="m-icon">🏋️</span>
+      <span class="m-label">Gym</span>
+    </button>
+    <button class="mobile-nav-item" onclick="showPaneMobile('cardio', this)">
+      <span class="m-icon">🏃</span>
+      <span class="m-label">Cardio</span>
+    </button>
+    <button class="mobile-nav-item" onclick="showPaneMobile('recovery', this)">
+      <span class="m-icon">💚</span>
+      <span class="m-label">Recovery</span>
+    </button>
+    <button class="mobile-nav-item" onclick="showPaneMobile('progress', this)">
+      <span class="m-icon">📈</span>
+      <span class="m-label">Progress</span>
+    </button>
+  </div>
+
 <div class="toast" id="toast"></div>
 
 <script>
@@ -1996,9 +2081,11 @@ async function loadProfile() {
 }
 
 async function logout() {
-  if (supabase) await supabaseClient.auth.signOut();
+  try { if (supabaseClient) await supabaseClient.auth.signOut(); } catch(e) {}
   appState.user = null;
   appState.profile = null;
+  localStorage.removeItem('sl_profile');
+  localStorage.removeItem('sl_state');
   document.getElementById('app-screen').style.display = 'none';
   document.getElementById('auth-screen').style.display = 'flex';
 }
@@ -2162,6 +2249,13 @@ function getGreeting() {
   return 'evening';
 }
 
+
+function showPaneMobile(name, el) {
+  showPane(name);
+  document.querySelectorAll('.mobile-nav-item').forEach(b => b.classList.remove('active'));
+  if (el) el.classList.add('active');
+}
+
 function showPane(name) {
   document.querySelectorAll('.content-pane').forEach(p => p.classList.remove('active'));
   document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
@@ -2291,10 +2385,23 @@ async function analyzeMeal() {
 function saveMeal() {
   const type = document.getElementById('m-type').value;
   const name = document.getElementById('m-desc').value.substring(0, 60) || 'Meal';
-  const cal = parseInt(document.getElementById('m-cal').value) || 0;
-  const prot = parseInt(document.getElementById('m-prot').value) || 0;
-  const carbs = parseInt(document.getElementById('m-carbs').value) || 0;
-  const fat = parseInt(document.getElementById('m-fat').value) || 0;
+  // Try input fields first, fall back to parsing from AI text
+  let cal = parseInt(document.getElementById('m-cal').value) || 0;
+  let prot = parseInt(document.getElementById('m-prot').value) || 0;
+  let carbs = parseInt(document.getElementById('m-carbs').value) || 0;
+  let fat = parseInt(document.getElementById('m-fat').value) || 0;
+  // If all zero, try parsing from displayed AI text
+  if (cal === 0 && prot === 0) {
+    const aiText = document.getElementById('meal-ai-text')?.textContent || '';
+    const calM = aiText.match(/Calories[:\s]+(\d+)/i);
+    const protM = aiText.match(/Protein[:\s]+(\d+)/i);
+    const carbM = aiText.match(/Carbs[:\s]+(\d+)/i);
+    const fatM = aiText.match(/Fat[:\s]+(\d+)/i);
+    if (calM) cal = parseInt(calM[1]);
+    if (protM) prot = parseInt(protM[1]);
+    if (carbM) carbs = parseInt(carbM[1]);
+    if (fatM) fat = parseInt(fatM[1]);
+  }
 
   appState.meals.push({ type, name, calories: cal, protein: prot, carbs, fat,
     time: new Date().toLocaleTimeString('en', {hour:'2-digit', minute:'2-digit'}) });
