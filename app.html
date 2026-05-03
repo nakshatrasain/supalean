@@ -1983,6 +1983,9 @@ async function initSupabase() {
     }
   } catch (e) {
     console.warn('Could not fetch config, running in demo mode');
+    // Always show auth screen even if config fails
+    document.getElementById('loading-screen').style.display = 'none';
+    document.getElementById('auth-screen').style.display = 'flex';
   }
   return false;
 }
@@ -2099,7 +2102,7 @@ async function logout() {
 
 // ===== ONBOARDING =====
 function enterOnboarding() {
-  document.getElementById('loading-screen').style.display = 'none';
+  const ls = document.getElementById('loading-screen'); if(ls) ls.style.display = 'none';
   document.getElementById('auth-screen').style.display = 'none';
   document.getElementById('onboarding-screen').style.display = 'flex';
 }
@@ -2231,7 +2234,7 @@ async function finishOnboarding() {
 
 // ===== APP =====
 function enterApp() {
-  document.getElementById('loading-screen').style.display = 'none';
+  const ls = document.getElementById('loading-screen'); if(ls) ls.style.display = 'none';
   loadLocalState();
   document.getElementById('auth-screen').style.display = 'none';
   document.getElementById('onboarding-screen').style.display = 'none';
@@ -2815,6 +2818,18 @@ function showToast(msg, type = 'success') {
 }
 
 // ===== AUTO-LOGIN CHECK =====
+
+// Safety net: if loading screen still showing after 5s, force show auth
+setTimeout(() => {
+  const ls = document.getElementById('loading-screen');
+  if (ls && ls.style.display !== 'none') {
+    console.warn('Loading timeout — showing auth');
+    ls.style.display = 'none';
+    const auth = document.getElementById('auth-screen');
+    if (auth && auth.style.display === 'none') auth.style.display = 'flex';
+  }
+}, 5000);
+
 window.addEventListener('DOMContentLoaded', async () => {
   if (supabaseClient) {
     const { data: { session } } = await supabaseClient.auth.getSession();
