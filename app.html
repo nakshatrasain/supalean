@@ -3056,8 +3056,11 @@ function renderCalendar() {
     const hasData = calDatesWithData.has(dateStr);
     const isFuture = new Date(dateStr) > today;
     var classes = 'cal-day' + (isToday?' today':'') + (hasData?' has-data':'') + (isFuture?' empty':'');
-    var click = isFuture ? '' : 'onclick="loadCalDay(''+dateStr+'')"';
-    html += '<div class="' + classes + '" ' + click + '>' + d + '</div>';
+    if (isFuture) {
+      html += '<div class="' + classes + '">' + d + '</div>';
+    } else {
+      html += '<div class="' + classes + '" onclick="loadCalDay(\'' + dateStr + '\')">' + d + '</div>';
+    }
   }
   grid.innerHTML = html;
 }
