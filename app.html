@@ -1297,6 +1297,37 @@ body {
   .mobile-nav { display: none; }
 }
 
+
+/* CALENDAR */
+.cal-day {
+  padding: 8px 4px;
+  border-radius: 8px;
+  cursor: pointer;
+  font-size: 13px;
+  font-family: 'Syne', sans-serif;
+  font-weight: 600;
+  color: var(--muted);
+  transition: all 0.15s;
+  position: relative;
+  border: 1px solid transparent;
+}
+.cal-day:hover { background: var(--bg3); color: var(--text); }
+.cal-day.today { color: var(--lime); border-color: rgba(200,240,0,0.3); }
+.cal-day.selected { background: var(--lime); color: #000; }
+.cal-day.has-data::after {
+  content: '';
+  position: absolute;
+  bottom: 2px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 4px;
+  height: 4px;
+  border-radius: 50%;
+  background: var(--teal);
+}
+.cal-day.selected::after { background: #000; }
+.cal-day.empty { cursor: default; }
+
 /* SCROLLBAR */
 ::-webkit-scrollbar { width: 4px; }
 ::-webkit-scrollbar-track { background: transparent; }
@@ -1521,6 +1552,9 @@ body {
       <div class="sidebar-section-label">Progress</div>
       <div class="nav-item" onclick="showPane('progress')">
         <span class="nav-icon">📈</span> Progress
+      </div>
+      <div class="nav-item" onclick="showPane('calendar')">
+        <span class="nav-icon">📅</span> History
       </div>
 
       <div class="sidebar-section-label">Other</div>
@@ -1899,6 +1933,38 @@ body {
         </div>
       </div>
 
+
+      <!-- CALENDAR / HISTORY -->
+      <div class="content-pane" id="pane-calendar">
+        <div class="pane-title">Daily History</div>
+
+        <div class="section-card">
+          <div class="section-card-title">Select Date</div>
+          <div style="display:flex;align-items:center;gap:12px;margin-bottom:16px">
+            <button class="btn btn-outline btn-sm" style="width:auto;padding:0 14px" onclick="changeCalMonth(-1)">←</button>
+            <div style="flex:1;text-align:center;font-family:'Syne',sans-serif;font-size:16px;font-weight:800" id="cal-month-label"></div>
+            <button class="btn btn-outline btn-sm" style="width:auto;padding:0 14px" onclick="changeCalMonth(1)">→</button>
+          </div>
+          <div style="display:grid;grid-template-columns:repeat(7,1fr);gap:4px;text-align:center;margin-bottom:8px">
+            <div style="font-size:11px;color:var(--muted);font-weight:700;padding:4px">S</div>
+            <div style="font-size:11px;color:var(--muted);font-weight:700;padding:4px">M</div>
+            <div style="font-size:11px;color:var(--muted);font-weight:700;padding:4px">T</div>
+            <div style="font-size:11px;color:var(--muted);font-weight:700;padding:4px">W</div>
+            <div style="font-size:11px;color:var(--muted);font-weight:700;padding:4px">T</div>
+            <div style="font-size:11px;color:var(--muted);font-weight:700;padding:4px">F</div>
+            <div style="font-size:11px;color:var(--muted);font-weight:700;padding:4px">S</div>
+          </div>
+          <div id="cal-grid" style="display:grid;grid-template-columns:repeat(7,1fr);gap:4px;text-align:center"></div>
+        </div>
+
+        <div class="section-card" id="cal-day-card" style="display:none">
+          <div class="section-card-title" id="cal-day-title">Selected Day</div>
+          <div id="cal-day-content">
+            <div class="empty-state"><div class="empty-icon">📅</div><div class="empty-text">Loading...</div></div>
+          </div>
+        </div>
+      </div>
+
     </div>
 
     <!-- CHATBOT PANEL -->
@@ -1960,6 +2026,10 @@ body {
       <span class="m-icon">📈</span>
       <span class="m-label">Progress</span>
     </button>
+    <button class="mobile-nav-item" onclick="showPaneMobile('calendar', this)">
+      <span class="m-icon">📅</span>
+      <span class="m-label">History</span>
+    </button>
   </div>
 
 <div class="toast" id="toast"></div>
@@ -1973,17 +2043,30 @@ let supabaseClient = null;
 
 async function initSupabase() {
   try {
-    // Fetch public config from server
+    // Use cached config for instant load
+    const cached = localStorage.getItem('sl_config');
+    if (cached) {
+      const config = JSON.parse(cached);
+      if (config.configured && window.supabase) {
+        supabaseClient = window.supabase.createClient(config.supabaseUrl, config.supabaseAnonKey);
+        // Refresh cache in background
+        fetch(API_BASE + '/api/config').then(r => r.json()).then(c => {
+          if (c.configured) localStorage.setItem('sl_config', JSON.stringify(c));
+        }).catch(() => {});
+        return true;
+      }
+    }
+    // First time — fetch config
     const res = await fetch(API_BASE + '/api/config');
     const config = await res.json();
     if (config.configured && window.supabase) {
+      localStorage.setItem('sl_config', JSON.stringify(config));
       supabaseClient = window.supabase.createClient(config.supabaseUrl, config.supabaseAnonKey);
       console.log('Supabase connected ✅');
       return true;
     }
   } catch (e) {
-    console.warn('Could not fetch config, running in demo mode');
-    // Always show auth screen even if config fails
+    console.warn('Could not fetch config');
     document.getElementById('loading-screen').style.display = 'none';
     document.getElementById('auth-screen').style.display = 'flex';
   }
@@ -2099,6 +2182,131 @@ async function logout() {
   document.getElementById('app-screen').style.display = 'none';
   document.getElementById('auth-screen').style.display = 'flex';
 }
+
+
+// ===== SUPABASE DATA SYNC =====
+
+async function syncToSupabase() {
+  if (!supabaseClient || !appState.user) return;
+  const uid = appState.user.id;
+  const today = new Date().toISOString().split('T')[0];
+
+  try {
+    // Save meals
+    for (const meal of appState.meals) {
+      if (!meal.synced) {
+        await supabaseClient.from('meals').upsert({
+          user_id: uid,
+          meal_type: meal.type,
+          name: meal.name,
+          calories: meal.calories || 0,
+          protein: meal.protein || 0,
+          carbs: meal.carbs || 0,
+          fat: meal.fat || 0,
+          meal_date: today
+        });
+        meal.synced = true;
+      }
+    }
+    // Save steps
+    if (appState.steps > 0) {
+      await supabaseClient.from('steps_logs').upsert({
+        user_id: uid, steps: appState.steps, log_date: today
+      }, { onConflict: 'user_id,log_date' });
+    }
+    // Save recovery
+    if (appState.recovery) {
+      await supabaseClient.from('recovery_logs').upsert({
+        user_id: uid,
+        recovery_score: appState.recovery.score,
+        hrv_ms: appState.recovery.hrv,
+        rhr_bpm: appState.recovery.rhr,
+        sleep_hours: appState.recovery.sleep,
+        log_date: today
+      }, { onConflict: 'user_id,log_date' });
+    }
+    // Save exercises
+    for (const ex of appState.exercises) {
+      if (!ex.synced) {
+        await supabaseClient.from('exercises').upsert({
+          user_id: uid,
+          name: ex.name,
+          sets: ex.sets,
+          exercise_date: today
+        });
+        ex.synced = true;
+      }
+    }
+    // Save cardio
+    for (const c of appState.cardio) {
+      if (!c.synced) {
+        await supabaseClient.from('cardio_sessions').upsert({
+          user_id: uid,
+          cardio_type: c.type,
+          duration_minutes: c.duration,
+          calories_burned: c.calories,
+          speed_level: c.speed,
+          incline_resistance: c.incline,
+          session_date: today
+        });
+        c.synced = true;
+      }
+    }
+    saveLocalState();
+  } catch(e) {
+    console.error('Sync error:', e);
+  }
+}
+
+async function loadDateData(dateStr) {
+  if (!supabaseClient || !appState.user) return;
+  const uid = appState.user.id;
+
+  try {
+    const [meals, steps, recovery, exercises, cardio] = await Promise.all([
+      supabaseClient.from('meals').select('*').eq('user_id', uid).eq('meal_date', dateStr),
+      supabaseClient.from('steps_logs').select('*').eq('user_id', uid).eq('log_date', dateStr).single(),
+      supabaseClient.from('recovery_logs').select('*').eq('user_id', uid).eq('log_date', dateStr).single(),
+      supabaseClient.from('exercises').select('*').eq('user_id', uid).eq('exercise_date', dateStr),
+      supabaseClient.from('cardio_sessions').select('*').eq('user_id', uid).eq('session_date', dateStr)
+    ]);
+
+    return {
+      meals: meals.data || [],
+      steps: steps.data?.steps || 0,
+      recovery: recovery.data ? {
+        score: recovery.data.recovery_score,
+        hrv: recovery.data.hrv_ms,
+        rhr: recovery.data.rhr_bpm,
+        sleep: recovery.data.sleep_hours
+      } : null,
+      exercises: exercises.data || [],
+      cardio: cardio.data || []
+    };
+  } catch(e) {
+    console.error('Load date error:', e);
+    return null;
+  }
+}
+
+async function loadWeightHistory() {
+  if (!supabaseClient || !appState.user) return;
+  try {
+    const { data } = await supabaseClient
+      .from('weight_logs')
+      .select('*')
+      .eq('user_id', appState.user.id)
+      .order('log_date', { ascending: false })
+      .limit(30);
+    if (data && data.length > 0) {
+      appState.weights = data.map(w => ({ weight: w.weight, date: w.log_date }));
+      saveLocalState();
+    }
+  } catch(e) {}
+}
+
+// Auto-sync every time data is saved
+const originalSaveLocalState = saveLocalState;
 
 // ===== ONBOARDING =====
 function enterOnboarding() {
@@ -2236,6 +2444,21 @@ async function finishOnboarding() {
 function enterApp() {
   const ls = document.getElementById('loading-screen'); if(ls) ls.style.display = 'none';
   loadLocalState();
+  // Load today's data and weight history from Supabase
+  const todayStr = new Date().toISOString().split('T')[0];
+  loadDateData(todayStr).then(data => {
+    if (data) {
+      if (data.meals.length > 0) appState.meals = data.meals.map(m => ({...m, type: m.meal_type, synced: true}));
+      if (data.steps) appState.steps = data.steps;
+      if (data.recovery) appState.recovery = data.recovery;
+      if (data.exercises.length > 0) appState.exercises = data.exercises.map(e => ({...e, sets: e.sets || [], synced: true}));
+      if (data.cardio.length > 0) appState.cardio = data.cardio.map(c => ({...c, type: c.cardio_type, duration: c.duration_minutes, calories: c.calories_burned, synced: true}));
+      saveLocalState();
+      renderAll();
+      updateDashboard();
+    }
+  }).catch(() => {});
+  loadWeightHistory();
   document.getElementById('auth-screen').style.display = 'none';
   document.getElementById('onboarding-screen').style.display = 'none';
   document.getElementById('app-screen').style.flex = '1';
@@ -2279,8 +2502,11 @@ function showPane(name) {
   document.querySelectorAll('.nav-item').forEach(n => {
     if (n.textContent.trim().toLowerCase().includes(name)) n.classList.add('active');
   });
-
   if (name === 'settings') loadProfileDisplay();
+  if (name === 'calendar') {
+    renderCalendar();
+    loadCalMonthData();
+  }
 }
 
 // ===== DASHBOARD =====
@@ -2349,6 +2575,7 @@ function saveSteps() {
   appState.steps = v;
   saveLocalState();
   updateDashboard();
+  syncToSupabase();
   document.getElementById('q-steps').value = '';
   showToast('Steps saved: ' + v.toLocaleString() + ' 👟');
 }
@@ -2424,6 +2651,7 @@ function saveMeal() {
   saveLocalState();
   renderMeals();
   updateDashboard();
+  syncToSupabase();
 
   // Reset
   document.getElementById('m-desc').value = '';
@@ -2511,6 +2739,7 @@ function logExercise() {
   saveLocalState();
   renderExercises();
   updateDashboard();
+  syncToSupabase();
   document.getElementById('ex-name').value = '';
   currentSets = [];
   renderSets();
@@ -2549,6 +2778,7 @@ function logCardio() {
   saveLocalState();
   renderCardio();
   updateDashboard();
+  syncToSupabase();
   ['c-dur','c-cal','c-speed','c-incline'].forEach(id => document.getElementById(id).value = '');
   showToast(type + ' logged! 🔥');
 }
@@ -2615,6 +2845,7 @@ function saveRecovery() {
   };
   saveLocalState();
   updateDashboard();
+  syncToSupabase();
   showToast('Recovery saved! ' + (score >= 67 ? '🟢' : score >= 34 ? '🟡' : '🔴'));
 }
 
@@ -2623,10 +2854,14 @@ function saveWeight() {
   const w = parseFloat(document.getElementById('w-input').value);
   if (!w) { showToast('Enter weight', 'error'); return; }
   if (!appState.weights) appState.weights = [];
-  appState.weights.push({ weight: w, date: new Date().toLocaleDateString() });
+  const wDate = new Date().toISOString().split('T')[0];
+  appState.weights.push({ weight: w, date: wDate });
   saveLocalState();
   renderWeightLog();
   updateDashboard();
+  if (supabaseClient && appState.user) {
+    supabaseClient.from('weight_logs').insert({ user_id: appState.user.id, weight: w, log_date: wDate }).then(() => {}).catch(() => {});
+  }
   document.getElementById('w-input').value = '';
   showToast('Weight saved: ' + w + 'kg ⚖️');
 }
@@ -2792,6 +3027,167 @@ async function callAnalyzeInBody(imageBase64) {
   if (!res.ok) throw new Error('InBody analysis failed');
   return res.json();
 }
+
+
+// ===== CALENDAR =====
+let calYear = new Date().getFullYear();
+let calMonth = new Date().getMonth();
+let calDatesWithData = new Set();
+
+function renderCalendar() {
+  const monthNames = ['January','February','March','April','May','June','July','August','September','October','November','December'];
+  document.getElementById('cal-month-label').textContent = monthNames[calMonth] + ' ' + calYear;
+
+  const grid = document.getElementById('cal-grid');
+  const firstDay = new Date(calYear, calMonth, 1).getDay();
+  const daysInMonth = new Date(calYear, calMonth + 1, 0).getDate();
+  const today = new Date();
+  const todayStr = today.toISOString().split('T')[0];
+
+  let html = '';
+  // Empty cells before first day
+  for (let i = 0; i < firstDay; i++) {
+    html += '<div class="cal-day empty"></div>';
+  }
+  // Day cells
+  for (let d = 1; d <= daysInMonth; d++) {
+    const dateStr = calYear + '-' + String(calMonth+1).padStart(2,'0') + '-' + String(d).padStart(2,'0');
+    const isToday = dateStr === todayStr;
+    const hasData = calDatesWithData.has(dateStr);
+    const isFuture = new Date(dateStr) > today;
+    var classes = 'cal-day' + (isToday?' today':'') + (hasData?' has-data':'') + (isFuture?' empty':'');
+    var click = isFuture ? '' : 'onclick="loadCalDay(''+dateStr+'')"';
+    html += '<div class="' + classes + '" ' + click + '>' + d + '</div>';
+  }
+  grid.innerHTML = html;
+}
+
+function changeCalMonth(dir) {
+  calMonth += dir;
+  if (calMonth > 11) { calMonth = 0; calYear++; }
+  if (calMonth < 0) { calMonth = 11; calYear--; }
+  renderCalendar();
+  loadCalMonthData();
+}
+
+async function loadCalMonthData() {
+  if (!supabaseClient || !appState.user) return;
+  const uid = appState.user.id;
+  const startDate = calYear + '-' + String(calMonth+1).padStart(2,'0') + '-01';
+  const endDate = calYear + '-' + String(calMonth+1).padStart(2,'0') + '-' + new Date(calYear, calMonth+1, 0).getDate();
+
+  try {
+    const { data } = await supabaseClient
+      .from('meals')
+      .select('meal_date')
+      .eq('user_id', uid)
+      .gte('meal_date', startDate)
+      .lte('meal_date', endDate);
+
+    if (data) {
+      data.forEach(m => calDatesWithData.add(m.meal_date));
+      renderCalendar();
+    }
+  } catch(e) {}
+}
+
+async function loadCalDay(dateStr) {
+  // Highlight selected
+  document.querySelectorAll('.cal-day').forEach(d => d.classList.remove('selected'));
+  event.target.classList.add('selected');
+
+  const card = document.getElementById('cal-day-card');
+  const title = document.getElementById('cal-day-title');
+  const content = document.getElementById('cal-day-content');
+
+  card.style.display = 'block';
+  const d = new Date(dateStr + 'T00:00:00');
+  title.textContent = d.toLocaleDateString('en', {weekday:'long', month:'long', day:'numeric', year:'numeric'});
+  content.innerHTML = '<div class="empty-state"><div class="empty-icon">⏳</div><div class="empty-text">Loading...</div></div>';
+
+  const data = await loadDateData(dateStr);
+  if (!data) { content.innerHTML = '<div class="empty-state"><div class="empty-text">No data found</div></div>'; return; }
+
+  const totalCal = data.meals.reduce((s,m) => s+(m.calories||0), 0);
+  const totalProt = data.meals.reduce((s,m) => s+(m.protein||0), 0);
+
+  let html = '';
+
+  // Stats row
+  html += `<div style="display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:16px">
+    <div style="background:var(--bg3);border-radius:10px;padding:12px;text-align:center">
+      <div style="font-family:'Syne',sans-serif;font-size:20px;font-weight:800;color:var(--lime)">${totalCal}</div>
+      <div style="font-size:11px;color:var(--muted)">CALORIES</div>
+    </div>
+    <div style="background:var(--bg3);border-radius:10px;padding:12px;text-align:center">
+      <div style="font-family:'Syne',sans-serif;font-size:20px;font-weight:800;color:var(--teal)">${totalProt}g</div>
+      <div style="font-size:11px;color:var(--muted)">PROTEIN</div>
+    </div>
+    <div style="background:var(--bg3);border-radius:10px;padding:12px;text-align:center">
+      <div style="font-family:'Syne',sans-serif;font-size:20px;font-weight:800;color:#3d8bff">${data.steps.toLocaleString()}</div>
+      <div style="font-size:11px;color:var(--muted)">STEPS</div>
+    </div>
+  </div>`;
+
+  // Recovery
+  if (data.recovery) {
+    const rc = data.recovery.score;
+    const col = rc >= 67 ? 'var(--success)' : rc >= 34 ? 'var(--warning)' : 'var(--danger)';
+    html += `<div style="display:flex;align-items:center;gap:12px;padding:12px;background:var(--bg3);border-radius:10px;margin-bottom:12px">
+      <div style="font-family:'Syne',sans-serif;font-size:22px;font-weight:800;color:${col}">${rc}%</div>
+      <div style="font-size:13px;color:var(--muted)">Recovery · HRV ${data.recovery.hrv||'—'}ms · RHR ${data.recovery.rhr||'—'}bpm · Sleep ${data.recovery.sleep||'—'}hrs</div>
+    </div>`;
+  }
+
+  // Meals
+  if (data.meals.length > 0) {
+    html += `<div style="font-family:'Syne',sans-serif;font-size:11px;font-weight:700;letter-spacing:1px;color:var(--muted);text-transform:uppercase;margin-bottom:8px">Meals</div>`;
+    data.meals.forEach(m => {
+      html += `<div class="meal-list-item">
+        <div class="meal-info"><div class="meal-name"><span class="type-tag">${m.meal_type||m.type}</span>${m.name}</div></div>
+        <div class="meal-badges">
+          <span class="mbadge mbadge-cal">${m.calories} kcal</span>
+          <span class="mbadge mbadge-prot">${m.protein}g P</span>
+        </div>
+      </div>`;
+    });
+  }
+
+  // Exercises
+  if (data.exercises.length > 0) {
+    html += `<div style="font-family:'Syne',sans-serif;font-size:11px;font-weight:700;letter-spacing:1px;color:var(--muted);text-transform:uppercase;margin:12px 0 8px">Exercises</div>`;
+    data.exercises.forEach(ex => {
+      const sets = Array.isArray(ex.sets) ? ex.sets : [];
+      html += `<div class="ex-item">
+        <div class="ex-name">${ex.name}</div>
+        <div class="set-chips" style="margin-top:8px">
+          ${sets.map((s,i) => `<span class="set-chip">S${i+1}: ${s.weight}kg×${s.reps}</span>`).join('')}
+        </div>
+      </div>`;
+    });
+  }
+
+  // Cardio
+  if (data.cardio.length > 0) {
+    html += `<div style="font-family:'Syne',sans-serif;font-size:11px;font-weight:700;letter-spacing:1px;color:var(--muted);text-transform:uppercase;margin:12px 0 8px">Cardio</div>`;
+    data.cardio.forEach(c => {
+      html += `<div class="cardio-item">
+        <div class="cardio-info"><h4>${c.cardio_type||c.type}</h4><div class="cardio-meta">${c.duration_minutes||c.duration} min</div></div>
+        <span class="mbadge mbadge-cal">${c.calories_burned||c.calories||0} cal</span>
+      </div>`;
+    });
+  }
+
+  if (!data.meals.length && !data.exercises.length && !data.cardio.length && !data.recovery) {
+    html = '<div class="empty-state"><div class="empty-icon">😴</div><div class="empty-text">No data logged this day</div></div>';
+  }
+
+  content.innerHTML = html;
+  card.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+}
+
+// Init calendar when shown
+const origShowPane = showPane;
 
 // ===== RENDER ALL =====
 function renderAll() {
